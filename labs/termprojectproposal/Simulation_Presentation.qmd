@@ -63,11 +63,11 @@ The methodology connects \tech{discrete-event simulation principles} with biolog
 
 ## Course Foundations
 
-Our class labs established a consistent thread from conceptual modeling to quantitative verification. \tech{Week9\_Scripts\_and\_Methods.qmd} emphasized the discipline of characterizing inputs before touching model code, while \tech{Lab02\_OAPM3\_Report.qmd} walked through output interpretation and confidence-interval reasoning using Arena experiments. The homework sequence on replication-length learning carried those ideas into practice by forcing us to justify run length with statistical evidence. This project presentation keeps that scaffold so classmates can map the mechanosensation proposal onto the simulation toolkit we have used all term.
+Class labs established a consistent thread from conceptual modeling to quantitative verification. \tech{Week9\_Scripts\_and\_Methods.qmd} emphasized the discipline of characterizing inputs before touching model code, while \tech{Lab02\_OAPM3\_Report.qmd} walked through output interpretation and confidence-interval reasoning using Arena experiments. The homework sequence on replication-length learning carried those ideas into practice by requiring justification of run length with statistical evidence. This project presentation keeps that scaffold so classmates can map the mechanosensation proposal onto the simulation toolkit used throughout the term.
 
 ## Input Characterization
 
-Input analysis from \tech{Lab02} required building empirical distributions, autocorrelation checks, and seasonality diagnostics prior to any Arena modeling. The same philosophy guides the larval stimulus work: we treat LED pulse trains and behavioral state transitions as stochastic inputs that must be summarized before model construction. Input fidelity determines whether hazard models see realistic stimulus histories, so we preserve the class discipline of histogramming, goodness-of-fit testing, and visual diagnostics before moving into DOE configuration.
+Input analysis from \tech{Lab02} required building empirical distributions, autocorrelation checks, and seasonality diagnostics prior to any Arena modeling. The same philosophy guides the larval stimulus work: LED pulse trains and behavioral state transitions are treated as stochastic inputs that must be summarized before model construction. Input fidelity determines whether hazard models see realistic stimulus histories, so the class discipline of histogramming, goodness-of-fit testing, and visual diagnostics is preserved before moving into DOE configuration.
 
 ```{r input-analysis-table, echo=FALSE}
 input_analysis <- data.frame(
@@ -91,7 +91,7 @@ kable(input_analysis,
 
 ## Output Diagnostics
 
-Our Arena assignments never accepted raw averages without context: \tech{Lab02\_OAPM3} required residual plots, warm-up removal checks, and a narrative linking behavior to histogram shape. The mechanosensation workflow mirrors that structure. Before trusting DOE outputs we examine turn-rate distributions, latency histograms, and pause-rate boxplots per condition, matching the course expectation that every KPI be paired with a diagnostic to detect drift or multimodality. This ensures that when we later compare main effects, we are doing so with numerically trustworthy response measures.
+Arena assignments never accepted raw averages without context: \tech{Lab02\_OAPM3} required residual plots, warm-up removal checks, and a narrative linking behavior to histogram shape. The mechanosensation workflow mirrors that structure. Before trusting DOE outputs, turn-rate distributions, latency histograms, and pause-rate boxplots per condition are examined, matching the course expectation that every KPI be paired with a diagnostic to detect drift or multimodality. This ensures that when main effects are later compared, the comparison uses numerically trustworthy response measures.
 
 ```{r output-analysis-table, echo=FALSE}
 output_analysis <- data.frame(
@@ -115,7 +115,7 @@ kable(output_analysis,
 
 ## Replication Length Learning
 
-The replication-length homework emphasized sequential estimation: run limited replications, evaluate half-width against precision targets, and only extend run length when intervals remained too wide. Our DOE pipeline follows that same philosophy. We executed short pilot batches, measured half-widths on turn rate and latency, then justified the \num{30}-replication choice per condition because it met the class-standard precision of keeping relative half-width below ten percent. This slide in the deck will let classmates immediately connect the larval simulations to the replication policies practiced in Arena.
+The replication-length homework emphasized sequential estimation: run limited replications, evaluate half-width against precision targets, and only extend run length when intervals remained too wide. The DOE pipeline follows that same philosophy. Short pilot batches were executed, half-widths on turn rate and latency were measured, then the \num{30}-replication choice per condition was justified because it met the class-standard precision of keeping relative half-width below ten percent. This slide in the deck will let classmates immediately connect the larval simulations to the replication policies practiced in Arena.
 
 ```{r replication-learning-table, echo=FALSE}
 replication_learning <- data.frame(
@@ -137,7 +137,7 @@ kable(replication_learning,
 
 ## Confidence Interval Reasoning
 
-Confidence-interval reporting became a grading staple in homework feedback, so every KPI here includes half-width, confidence level, and interpretation. We quote the same t-based formula derived in \tech{Week9\_Scripts\_and\_Methods}, making it clear that the mechanosensation project is not inventing new statistics but reusing the classroom framework. The presentation will show how the Arena-style across-replications summary file aligns with the class rubric and how the biological KPIs still respect half-width targets.
+Confidence-interval reporting became a grading staple in homework feedback, so every KPI here includes half-width, confidence level, and interpretation. The same t-based formula derived in \tech{Week9\_Scripts\_and\_Methods} is quoted, making it clear that the mechanosensation project is not inventing new statistics but reusing the classroom framework. The presentation will show how the Arena-style across-replications summary file aligns with the class rubric and how the biological KPIs still respect half-width targets.
 
 ```{r ci-analysis-table, echo=FALSE}
 ci_analysis <- data.frame(
@@ -161,7 +161,7 @@ kable(ci_analysis,
 
 ## Positioning the Proposal
 
-With the class foundations in mind, we can situate the mechanosensation proposal as a natural extension of the semester’s toolkit. The engineered dataset plays the role of carefully characterized input models, the hazard-based simulation mirrors Arena process logic but with biological events, and the DOE plus confidence-interval analysis follows the same verification loop we used on manufacturing case studies. The following slides dive into the pipeline and technical details with the shared vocabulary already established.
+With the class foundations in mind, the mechanosensation proposal can be situated as a natural extension of the semester's toolkit. The engineered dataset plays the role of carefully characterized input models, the hazard-based simulation mirrors Arena process logic but with biological events, and the DOE plus confidence-interval analysis follows the same verification loop used on manufacturing case studies. The following slides dive into the pipeline and technical details with the shared vocabulary already established.
 
 ## The Pipeline
 
@@ -327,7 +327,7 @@ kable(kpi_definitions,
 
 ## Event-Hazard Models
 
-### How We Predict Behavioral Events
+### How Behavioral Events Are Predicted
 
 The \tech{hazard function} models the instantaneous probability of behavioral events occurring at time $t$ conditioned on feature vector $\mathbf{x}$:
 
