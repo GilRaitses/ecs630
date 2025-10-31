@@ -24,54 +24,76 @@
 
         body {
             font-family: 'Avenir Next', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: white;
+            background: linear-gradient(135deg, var(--cinnamoroll-cream) 0%, var(--cinnamoroll-lavender) 100%);
             color: var(--cinnamoroll-dark-blue);
             margin: 0;
-            padding: 0;
-            overflow-x: hidden;
+            padding: 2em;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
         .header {
-            background: linear-gradient(135deg, var(--cinnamoroll-cream) 0%, var(--cinnamoroll-lavender) 100%);
-            padding: 1em;
             text-align: center;
-            border-bottom: 2px solid var(--cinnamoroll-light-blue);
+            margin-bottom: 1.5em;
         }
 
         h1 {
             font-family: 'Didot', serif;
-            font-size: 1.5em;
+            font-size: 2em;
             color: var(--cinnamoroll-dark-blue);
             margin: 0;
         }
 
         .subtitle {
             color: var(--cinnamoroll-brown);
-            font-size: 0.9em;
-            margin-top: 0.3em;
+            font-size: 1em;
+            margin-top: 0.5em;
             font-style: italic;
+        }
+
+        .presentation-wrapper {
+            background: white;
+            border-radius: 12px;
+            padding: 2em;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            border: 2px solid var(--cinnamoroll-light-blue);
+            max-width: 1200px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .presentation-container {
             width: 100%;
-            height: calc(100vh - 120px);
+            max-width: 1000px;
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+            height: 0;
             overflow: hidden;
         }
 
         .presentation-iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
             border: none;
-            display: block;
+            transform: scale(0.8);
+            transform-origin: top left;
+            width: 125%;
+            height: 125%;
         }
 
         .footer {
-            background: linear-gradient(135deg, var(--cinnamoroll-cream) 0%, var(--cinnamoroll-lavender) 100%);
             text-align: center;
-            padding: 0.8em;
-            border-top: 2px solid var(--cinnamoroll-light-blue);
+            margin-top: 1.5em;
             color: var(--cinnamoroll-brown);
-            font-size: 0.8em;
+            font-size: 0.85em;
         }
     </style>
 </head>
@@ -81,8 +103,10 @@
         <p class="subtitle">Gil Raitses | Term Project Portfolio</p>
     </div>
 
-    <div class="presentation-container">
-        <iframe src="Simulation_Presentation.html" class="presentation-iframe" title="Simulation Presentation"></iframe>
+    <div class="presentation-wrapper">
+        <div class="presentation-container">
+            <iframe src="Simulation_Presentation.html" class="presentation-iframe" title="Simulation Presentation"></iframe>
+        </div>
     </div>
 
     <div class="footer">
