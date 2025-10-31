@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECS630 Simulation Modeling - Gil Raitses</title>
+    <style>
+        /* Cinnamoroll Color Palette */
+        :root {
+            --cinnamoroll-light-blue: #B4D7EC;
+            --cinnamoroll-lavender: #E8D7F1;
+            --cinnamoroll-pink: #F5D4D8;
+            --cinnamoroll-cream: #FFF9F3;
+            --cinnamoroll-blue: #8AB4D3;
+            --cinnamoroll-dark-blue: #2C4A5F;
+            --cinnamoroll-brown: #5F4A3F;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Avenir Next', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, var(--cinnamoroll-cream) 0%, var(--cinnamoroll-lavender) 100%);
+            color: var(--cinnamoroll-dark-blue);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2em;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+            padding: 3em;
+            border: 3px solid var(--cinnamoroll-light-blue);
+        }
+
+        h1 {
+            font-family: 'Didot', serif;
+            font-size: 2.5em;
+            color: var(--cinnamoroll-dark-blue);
+            margin-bottom: 0.5em;
+            text-align: center;
+            border-bottom: 3px solid var(--cinnamoroll-light-blue);
+            padding-bottom: 0.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--cinnamoroll-brown);
+            font-size: 1.1em;
+            margin-bottom: 2em;
+            font-style: italic;
+        }
+
+        .project-card {
+            background: var(--cinnamoroll-cream);
+            border: 2px solid var(--cinnamoroll-light-blue);
+            border-radius: 12px;
+            padding: 2em;
+            margin-bottom: 1.5em;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .project-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            border-color: var(--cinnamoroll-pink);
+        }
+
+        .project-title {
+            font-family: 'Didot', serif;
+            font-size: 1.5em;
+            color: var(--cinnamoroll-dark-blue);
+            margin-bottom: 0.5em;
+        }
+
+        .project-description {
+            color: var(--cinnamoroll-brown);
+            line-height: 1.6;
+            margin-bottom: 1em;
+        }
+
+        .project-link {
+            display: inline-block;
+            background: var(--cinnamoroll-light-blue);
+            color: var(--cinnamoroll-dark-blue);
+            padding: 0.8em 1.5em;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background 0.3s ease, color 0.3s ease;
+            border: 2px solid var(--cinnamoroll-blue);
+        }
+
+        .project-link:hover {
+            background: var(--cinnamoroll-pink);
+            color: white;
+            border-color: var(--cinnamoroll-pink);
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 3em;
+            padding-top: 2em;
+            border-top: 2px solid var(--cinnamoroll-lavender);
+            color: var(--cinnamoroll-brown);
+            font-size: 0.9em;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--cinnamoroll-lavender);
+            color: var(--cinnamoroll-dark-blue);
+            padding: 0.3em 0.8em;
+            border-radius: 12px;
+            font-size: 0.85em;
+            margin-left: 0.5em;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ECS630 Simulation Modeling</h1>
+        <p class="subtitle">Gil Raitses | Term Project Portfolio</p>
+
+        <div class="project-card">
+            <h2 class="project-title">Behavioral Simulation of Drosophila Larvae</h2>
+            <p class="project-description">
+                Data engineering, DOE design, and event-hazard modeling for stimulus-driven 
+                behavioral simulation. This project develops a stimulus-response modeling framework 
+                using event-hazard methods from survival analysis to predict behavioral events 
+                (turns, stops, reversals) as functions of LED stimulus intensity, temporal history, 
+                and contextual features.
+            </p>
+            <a href="labs/termprojectproposal/Simulation_Presentation.html" class="project-link">
+                View Presentation →
+            </a>
+            <span class="badge">Term Project</span>
+        </div>
+
+        <div class="footer">
+            <p>Course: ECS630 Simulation Modeling</p>
+            <p style="margin-top: 0.5em; font-size: 0.9em; color: var(--cinnamoroll-brown);">
+                Last updated: <span id="date"></span>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('date').textContent = new Date().toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    </script>
+</body>
+</html>
+

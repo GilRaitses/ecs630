@@ -1,0 +1,20 @@
+Statistical Comparisons with PAN
+
+¢ Model 6-5 alternatives were made with 110 replications each
+
+- Better than one replication, but what about statistical validity of
+comparisons, selection of “the best”?
+
+¢ Select Total Cost column, Insert/Chart (or dt or right-click on column,
+then Insert Chart)
+
+- Chart Type: Box and Whisker
+
+- Next, Total Cost; Next defaults
+
+- Next, Identify Best Scenarios
+
+- Smaller is Better, Error Tolerance = 0 (not the default)
+- Show Best Scenarios; Finish
+
+lof 2

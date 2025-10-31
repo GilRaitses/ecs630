@@ -1,0 +1,14 @@
+Half Width and Number of Replications
+
+¢ Prefer smaller confidence intervals - precision
+
+¢ Noation: n = no. replications
+x = Sample mean
+S = Sample standard deviation
+Ciea2 = Critical Value from t tables
+
+- Confidence interval: X+t ,, ,S//n
+¢ Cant controltors
+
+¢ Must increase n — how much?
+lof 2

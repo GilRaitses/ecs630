@@ -1,0 +1,39 @@
+Example (i) continued
+
+Each day a truck removes a load between /0 and 150 tons from the
+
+deposit. From historical data the frequency of occurrence for the
+different sizes of lot has been collected as below:
+
+Random variable TOC:
+
+Transported coal
+(tons)
+
+70
+
+80
+
+90
+
+100
+
+110
+
+120
+
+150
+
+% Of observed
+cases
+
+10
+
+18
+
+28
+
+21
+
+10
+

@@ -1,0 +1,17 @@
+A company manufactures parts for a car. [he company
+receives each day the first thing in the morning the orders
+that should deliver in the following day. The section of the
+company’s plant takes charge of two types of parts, A and B.
+
+All the work requires the work of a technician on a machine.
+The production rate (PR) varies according to the type of the
+
+part, 5 pieces/hour for those to type A and 5 pieces/hour for
+those of type B.
+
+The plant works with four different clients who may or may
+not place an order in a given day. From the past historical
+data, the following distribution of probability is used to
+determine the number of orders received a day (NOD).
+
+lof 2

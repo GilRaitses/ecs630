@@ -1,0 +1,24 @@
+Comparing Two Alternatives
+
+¢ Usually, want to compare alternative system configurations, layouts, scenarios, sensitivity
+analysis... here just two alternatives
+
+« Base case of Model 6-1(5-3), vs. adding three resources units for each type
+
+- New Sales, New Tech 1, New Tech 2, New Tech 3, New Tech All, and go to 29 trunk lines
+
+¢ 110 replications for “Total Cost”
+
+- Base-case scenario:
+22175.19 +- $69.54
+
+- More-resource scenario:
+24542.82 +- 529.11
+
+¢ 110 replications for “Percent Rejected”
+
+- Base-case scenario:
+11.7596 +- 0.51
+
+- More-resource scenario:
+1.7276 +- 0.51

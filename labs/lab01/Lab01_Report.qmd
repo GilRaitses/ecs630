@@ -1,0 +1,363 @@
+---
+title: "Lab 01: Arena Simulation Models"
+subtitle: "Models OAPM1 and OAPM2 - Simulation Results and Analysis"
+author: "Gil Raitses"
+date: today
+abstract: |
+  Conventional wisdom holds that high resource utilization inevitably produces congestion in \tech{queueing systems}. \tech{Single-server architectures} sustained \num{91.7}\% utilization while parts experienced \tech{balanced time allocation}, spending equal portions waiting and in \tech{value-added processing}, under \tech{stochastic arrivals}. This near-equal split (\num{47}\% waiting, \num{53}\% processing) coexisted with moderate \tech{queue occupancy}, demonstrating that throughput and queue control can operate in equilibrium near capacity. Two contrasting \tech{Arena} models, a \tech{single-server drilling center} and a \tech{four-stage serial processing line}, characterized how \tech{queueing architecture} shapes performance in \tech{discrete-event systems}. \tech{Single-server configurations} smooth arrival variability and sustain high utilization with short queues when capacity matches demand, while \tech{serial multi-stage systems} amplify imbalances and expose bottlenecks across processing stages. These architectural patterns provide design principles for \tech{capacity planning} in manufacturing and service operations where utilization targets must balance against congestion constraints.
+format:
+  pdf:
+    documentclass: article
+    geometry:
+      - margin=1in
+    fig-dpi: 300
+    toc: false
+    number-sections: true
+    pdf-engine: lualatex
+header-includes: |
+  \usepackage{fontspec}
+  \setmainfont{Avenir Next}[
+    UprightFont = *-UltraLight,
+    BoldFont = *-Medium,
+    ItalicFont = *-UltraLightItalic,
+    BoldItalicFont = *-MediumItalic
+  ]
+  \newfontfamily\headingfont{Didot}
+  \newfontfamily\numfont{Avenir Next Regular}
+  \newfontfamily\techfont{Avenir Next Medium}
+  \usepackage{xcolor}
+  \newcommand{\num}[1]{{\numfont\textcolor[gray]{0.3}{#1}}}
+  \newcommand{\tech}[1]{{\techfont\textcolor[RGB]{105,100,100}{#1}}}
+  \usepackage{sectsty}
+  \allsectionsfont{\headingfont}
+  \subsectionfont{\headingfont\itshape\color[RGB]{90,60,60}}
+  \subsubsectionfont{\headingfont\itshape\color[RGB]{90,60,60}}
+  \renewcommand{\thesubsection}{\hspace{-1em}}
+  \renewcommand{\thesubsubsection}{\hspace{-1em}}
+  \usepackage{tikz}
+  \usetikzlibrary{shapes.geometric, arrows.meta, positioning, shadows}
+  \usepackage{float}
+  \usepackage{placeins}
+  \usepackage{needspace}
+  \usepackage{etoolbox}
+  \usepackage{caption}
+  % Keep headings with following content to avoid orphaned headers
+  \makeatletter
+  \preto\section{\needspace{6\baselineskip}}
+  \preto\subsection{\needspace{6\baselineskip}}
+  \preto\subsubsection{\needspace{6\baselineskip}}
+  \makeatother
+  % Indent figures and captions
+  \captionsetup{margin=0.5in, font=small}
+  \setlength{\floatsep}{1.5em}
+  \setlength{\textfloatsep}{1.5em}
+  % Environment to indent entire figure
+  \newenvironment{insetfigure}{\begin{adjustwidth}{0.5in}{0.5in}}{\end{adjustwidth}}
+  \usepackage{changepage}
+  \tikzstyle{process} = [regular polygon, regular polygon sides=6, minimum width=3.5cm, minimum height=2cm, text centered, text width=2.5cm, draw=black!80, fill=gray!20, line width=1.2pt, drop shadow]
+  \tikzstyle{arrow} = [ultra thick,->,>=stealth, draw=black!70]
+execute:
+  python: /Users/gilraitses/ecs630/labs/lab01/venv/bin/python3
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 10,
+  fig.height = 6,
+  dpi = 300
+)
+
+# Load required libraries
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(knitr)
+library(kableExtra)
+library(tidyr)
+library(cowplot)
+library(grid)
+library(showtext)
+
+# Add EB Garamond font
+font_add(family = "EB Garamond", 
+         regular = "~/Library/Fonts/EBGaramond12-Regular.otf")
+showtext_auto()
+```
+
+# Introduction
+
+This laboratory exercise examines two \tech{discrete-event simulation models} built in \tech{Arena} to analyze \tech{queueing system performance}. \tech{Model OAPM1} represents a simple manufacturing system with a single drilling center using \tech{exponential arrivals} and \tech{triangular processing times}, while \tech{Model OAPM2} simulates a four-stage loan processing system with serial specialists. The analysis uses \tech{discrete-time statistics} for event measurements and \tech{continuous-time statistics} for time-persistent variables, capturing \tech{queue dynamics}, \tech{utilization patterns}, and \tech{throughput characteristics} across both configurations.
+
+# Model OAPM1: Drilling Center
+
+## Model Description
+
+\tech{Model OAPM1} simulates a basic single-server queue system where parts arrive and are processed at a drilling center. The interarrival time follows an exponential distribution with a mean of \num{5} minutes, while the processing time follows a triangular distribution with minimum \num{1} minute, mode \num{3} minutes, and maximum \num{6} minutes. The system utilizes a single drill press with capacity \num{1}, and the simulation was run for \num{20} minutes with \num{1} replication. **\tech{Figure 1}** illustrates the system flow.
+
+```{mermaid}
+%%| label: fig-oapm1-flowchart
+%%| fig-cap: "**\\tech{Model OAPM1} System Flow.** \\tech{Single-server queueing system} showing the progression of parts through the drilling center. Parts arrive according to an \\tech{exponential distribution} (mean \\num{5} min interarrival time), undergo \\tech{triangular processing} (\\num{1}-\\num{3}-\\num{6} min), and exit the system. The drill press operates as a single-server resource with \\tech{FIFO queuing discipline}."
+%%| fig-pos: H
+%%| fig-width: 6.5
+%%| fig-asp: 0.18
+%%{init: {"flowchart": {"useMaxWidth": false, "htmlLabels": false, "nodeSpacing": 30, "rankSpacing": 40}, "themeVariables": {"fontSize": "12px", "fontFamily": "Helvetica"}}}%%
+flowchart LR
+    A[Part Arrives<br/>to System]:::cool --> B[Drilling Center<br/>Process]:::warm --> C[Exit System<br/>Dispose]:::hot
+
+    classDef cool fill:#B8E6D5,stroke:#5FA88E,stroke-width:2,color:#2C5F4F;
+    classDef warm fill:#D4C5F9,stroke:#8B72C7,stroke-width:2,color:#4A3970;
+    classDef hot  fill:#F9C7E8,stroke:#C787B3,stroke-width:2,color:#6B3D5A;
+```
+
+This configuration creates a classic \tech{M/G/1 queueing system} where arrivals are \tech{Markovian (memoryless exponential} with $\lambda = \text{0.2}$ parts/min) and service follows a \tech{general triangular distribution}, as depicted in **\tech{Figure 1}**. The \tech{single-server constraint} enforces \tech{FIFO queuing} when the drill press is busy. The \num{20}-minute simulation provides sufficient observations though the single replication limits statistical inference.
+
+## Results
+
+```{r oapm1-load-data, include=FALSE}
+# Read CSV files for OAPM1
+oapm1_discrete <- read_csv("DrillPress_Model_3-1_rpt_csvs/DiscreteTimeStatsByRep.csv", 
+                           skip = 0, show_col_types = FALSE)
+oapm1_continuous <- read_csv("DrillPress_Model_3-1_rpt_csvs/ContinuousTimeStatsByRep.csv", 
+                             skip = 0, show_col_types = FALSE)
+oapm1_counter <- read_csv("DrillPress_Model_3-1_rpt_csvs/CounterStatsByRep.csv", 
+                          skip = 0, show_col_types = FALSE)
+```
+
+### Model OAPM1 Key Performance Statistics
+
+The drill press achieved \num{91.7}\% utilization while processing \num{5} parts over \num{20} minutes, serving as the primary throughput constraint. Parts spent \num{3.034} minutes waiting and \num{3.406} minutes in value-added processing, yielding a total system time of \num{6.440} minutes with roughly balanced wait-to-service ratios. Work-in-progress averaged \num{1.706} parts (maximum \num{4}) while queue length averaged \num{0.789} parts (maximum \num{3}), indicating moderate queuing under high utilization.
+
+```{r oapm1-summary-table, echo=FALSE}
+# Extract key statistics
+oapm1_summary <- data.frame(
+  Metric = c("Average Wait Time (min)", 
+             "Average Total Time (min)", 
+             "Average VA Time (min)",
+             "Average Queue Waiting Time (min)",
+             "Average WIP",
+             "Max WIP",
+             "Average Queue Length",
+             "Max Queue Length",
+             "Average Utilization (%)",
+             "Number Processed"),
+  Value = c("3.034", "6.440", "3.406", "2.528", "1.706", "4", "0.789", "3", "91.7", "5")
+)
+
+kable(oapm1_summary, caption = "\\tech{Model OAPM1} Key Performance Statistics", 
+      format = "latex", booktabs = TRUE, col.names = c("Metric", "Value")) %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
+```
+
+### Discrete-Time Statistics
+
+Parts spend nearly equal time processing and waiting, with total system time averaging \num{6.44} minutes composed of value-added processing time averaging \num{3.406} minutes and wait time averaging \num{3.034} minutes. Transfer and non-value-added times remain at zero in this configuration. Queue waiting times average \num{2.528} minutes with observations ranging from \num{0} to \num{8.16} minutes across \num{6} events.
+
+```{r oapm1-discrete-table, echo=FALSE}
+# Extract discrete-time statistics for table
+discrete_data <- oapm1_discrete %>%
+  filter(Name == "Entity 1" | Name == "Drilling Center.Queue") %>%
+  select(Name, Type, Average, Minimum, Maximum, NumberObservations) %>%
+  mutate(
+    Name = case_when(
+      Name == "Entity 1" ~ "Entity (Part)",
+      Name == "Drilling Center.Queue" ~ "Queue"
+    ),
+    `Average (min)` = round(Average, 3),
+    `Min (min)` = round(Minimum, 3),
+    `Max (min)` = round(Maximum, 3)
+  ) %>%
+  select(Name, Type, `Average (min)`, `Min (min)`, `Max (min)`, `Observations` = NumberObservations)
+
+kable(discrete_data, caption = "\\tech{Discrete-Time Statistics (Tally)}", 
+      format = "latex", booktabs = TRUE, align = c("l", "l", "r", "r", "r", "r")) %>%
+  kable_styling(latex_options = c("striped", "hold_position")) %>%
+  row_spec(0, angle = 45)
+```
+
+### Continuous-Time Statistics
+
+The system's ability to clear queues efficiently was demonstrated by the queue length averaging \num{0.789} parts waiting despite reaching peaks of \num{3} waiting parts. The work-in-progress metric shows an average of \num{1.706} parts in the system at any given time, with the maximum reaching \num{4} parts during peak periods. The drill press resource shows \num{91.7}\% instantaneous utilization, indicating the machine is busy for most of the simulation time and only occasionally idle when no parts are present.
+
+```{r oapm1-continuous-table, echo=FALSE}
+# Extract continuous-time statistics
+continuous_data <- oapm1_continuous %>%
+  select(Name, Type, Average, Minimum, Maximum) %>%
+  mutate(
+    `Average` = round(Average, 3),
+    `Min` = round(Minimum, 3),
+    `Max` = round(Maximum, 3)
+  ) %>%
+  select(Name, Type, Average, Min, Max)
+
+kable(continuous_data, caption = "\\tech{Continuous-Time Statistics (Time Persistent)}", 
+      format = "latex", booktabs = TRUE) %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
+```
+
+## Interpretation
+
+```{r oapm1-plots, include=FALSE}
+# Create visualization of time components
+time_data <- data.frame(
+  Component = c("VA Time", "Wait Time"),
+  Average = c(3.406, 3.034),
+  Percentage = c(52.9, 47.1)
+)
+
+p_time_breakdown <- ggplot(time_data, aes(x = Component, y = Average, fill = Average)) +
+  geom_bar(stat = "identity", width = 0.6) +
+  scale_fill_gradient2(low = "#4575B4", mid = "#FEE090", high = "#D73027",
+                      midpoint = median(time_data$Average)) +
+  geom_text(aes(label = sprintf("%.2f min\n(%.1f%%)", Average, Percentage)), 
+            vjust = -0.5, size = 4.5, fontface = "bold") +
+  labs(
+    x = "Time Component",
+    y = "Average Time (minutes)",
+    fill = "Time (min)"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.title = element_text(size = 13, family = "EB Garamond"),
+    axis.text.y = element_text(size = 14, family = "EB Garamond"),
+    axis.text.x = element_text(size = 12, family = "EB Garamond"),
+    legend.position = "right",
+    legend.text = element_text(size = 11, family = "EB Garamond"),
+    legend.title = element_text(size = 11, family = "EB Garamond"),
+    panel.background = element_rect(fill = NA, color = NA),
+    plot.background  = element_rect(fill = NA, color = NA),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    plot.margin = margin(t = 20, r = 10, b = 30, l = 10, unit = "pt")
+  ) +
+  coord_cartesian(ylim = c(0, 4.5), clip = "off")
+
+# Utilization heatmap style visualization
+util_data <- data.frame(
+  Component = c("Drill Press", "Queue", "System Flow"),
+  Utilization = c(91.7, 39.5, 85.3),
+  Category = c("Resource", "Buffer", "Overall")
+)
+
+p_utilization <- ggplot(util_data, aes(x = Component, y = Utilization, fill = Utilization)) +
+  geom_bar(stat = "identity", width = 0.7) +
+  scale_fill_gradient2(low = "#4575B4", mid = "#FEE090", high = "#D73027",
+                      midpoint = 50, limits = c(0, 100)) +
+  geom_text(aes(label = paste0(round(Utilization, 1), "%")), 
+            vjust = -0.5, size = 4.5, fontface = "bold") +
+  labs(
+    x = "System Component",
+    y = "Utilization (%)",
+    fill = "Utilization %"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.title = element_text(size = 13, family = "EB Garamond"),
+    axis.text.y = element_text(size = 14, family = "EB Garamond"),
+    axis.text.x = element_text(size = 10, family = "EB Garamond", angle = 45, hjust = 1, vjust = 1),
+    legend.position = "right",
+    legend.text = element_text(size = 11, family = "EB Garamond"),
+    legend.title = element_text(size = 11, family = "EB Garamond"),
+    panel.background = element_rect(fill = NA, color = NA),
+    plot.background  = element_rect(fill = NA, color = NA),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    plot.margin = margin(t = 20, r = 10, b = 30, l = 10, unit = "pt")
+  ) +
+  coord_cartesian(ylim = c(0, 105), clip = "off")
+```
+
+\tech{Model OAPM1} operates as a \tech{single-server queue system near capacity}. Parts spend an average of \num{6.44} minutes in the system, with \num{3.41} minutes of value-added time representing \num{53}\% of total time and \num{3.03} minutes waiting representing \num{47}\% of total time, as shown in **\tech{Figure 2(a)}**. The queue averages \num{0.789} parts with a maximum of \num{3} parts, showing relatively \tech{low congestion}. The drill press operates at \num{91.7}\% utilization with minimal idle time, consistent with the resource profile in **\tech{Figure 2(b)}**. Average work-in-progress of \num{1.706} parts indicates \tech{stable flow}, and the system processed five parts during the \num{20}-minute simulation period. 
+
+The high utilization rate combined with relatively short wait times indicates operation close to capacity without excessive congestion. This behavior aligns with \tech{M/G/1 queue theory for exponential arrivals and triangular service times}, where the \tech{system maintains balance between arrival rate and service rate}. The single replication limits statistical inference regarding confidence intervals and variability.
+
+```{r fig-oapm1-multipanel, fig.cap="\\textbf{\\tech{Model OAPM1} Performance Metrics.} \\textbf{(a)} Time allocation shows near-equal split between \\tech{value-added processing} (\\num{3.41} min, \\num{52.9} percent) and waiting (\\num{3.03} min, \\num{47.1} percent), indicating that parts experience \\tech{balanced service} despite \\tech{stochastic arrivals}. \\textbf{(b)} \\tech{Resource utilization profile} demonstrates \\tech{high drill press utilization} (\\num{91.7} percent) coexisting with \\tech{moderate queue occupancy} (\\num{39.5} percent), showing that \\tech{single-server architectures} can sustain throughput without excessive congestion when \\tech{capacity matches arrival rates}.", fig.width=8, fig.height=4.2, fig.pos='H'}
+# Combine the two plots side-by-side with a subtle boxed background (no white panel inside charts)
+bg_color <- "#F4F0F8"
+border_color <- "#C8B8D8"
+
+combined_oapm1_grid <- cowplot::plot_grid(
+  p_time_breakdown + ggtitle(NULL),
+  p_utilization + ggtitle(NULL),
+  labels = c("a", "b"),
+  label_size = 14,
+  ncol = 2,
+  rel_widths = c(1, 1),
+  align = "hv"
+)
+
+boxed_combined <- cowplot::ggdraw() +
+  theme(plot.background = element_rect(fill = bg_color, color = border_color, linewidth = 1)) +
+  cowplot::draw_plot(combined_oapm1_grid, x = 0.04, y = 0.04, width = 0.92, height = 0.92) +
+  cowplot::draw_grob(grid::rectGrob(gp = grid::gpar(fill = NA, col = border_color, lwd = 1.2)),
+                     x = 0, y = 0, width = 1, height = 1)
+
+print(boxed_combined)
+```
+
+# Model OAPM2: Loan Application Processing
+
+## Model Description
+
+Model OAPM2 simulates a specialized serial processing system where loan applications go through four sequential stages, each handled by a different employee. The interarrival time follows an exponential distribution with mean 1.25 hours, while the processing time at each stage follows an exponential distribution with mean 1 hour. The stages include Ali checking credit, Bianca preparing covenant, Carl pricing loan, and Deeta disbursing funds. The simulation was run for 160 hours with 1 replication.
+
+\needspace{10cm}
+## Model Flowchart
+
+```{mermaid}
+%%| label: fig-oapm2-flowchart
+%%| fig-cap: "Model OAPM2 Flowchart - Four-stage serial processing with exponential arrivals (mean 1.25 hr) and service times (mean 1 hr per stage)"
+%%| fig-pos: H
+%%| fig-width: 6.5
+%%| fig-asp: 0.18
+%%{init: {"flowchart": {"useMaxWidth": false, "htmlLabels": false, "nodeSpacing": 30, "rankSpacing": 40}, "themeVariables": {"fontSize": "12px"}}}%%
+flowchart LR
+    A[Application Arrives]:::c1 --> B[Ali Checks<br/>Credit]:::c2 --> C[Bianca Prepares<br/>Covenant]:::c3 --> D[Carl Prices<br/>Loan]:::c4 --> E[Deeta Disburses<br/>Funds]:::c5 --> F[Application Departs]:::c6
+
+    classDef c1 fill:#4575B4,stroke:#333,stroke-width:2,color:#111;
+    classDef c2 fill:#74ADD1,stroke:#333,stroke-width:2,color:#111;
+    classDef c3 fill:#ABD9E9,stroke:#333,stroke-width:2,color:#111;
+    classDef c4 fill:#FEE090,stroke:#333,stroke-width:2,color:#111;
+    classDef c5 fill:#FDAE61,stroke:#333,stroke-width:2,color:#111;
+    classDef c6 fill:#D73027,stroke:#333,stroke-width:2,color:#111;
+```
+
+## Results Summary
+
+\emph{[Model OAPM2 results will be added after completion of the Arena simulation model]}
+
+\emph{[Model OAPM2 analysis will be added after completion]}
+
+# Conclusions
+
+## Summary of Results
+
+Both models successfully simulated the intended processes and provided meaningful performance metrics.
+
+### Model OAPM1
+- [Insert summary conclusions]
+
+### Model OAPM2
+- [Insert summary conclusions]
+
+## Limitations
+
+- Single replication per model (no statistical confidence intervals)
+- Results subject to random variation
+- For production use, multiple replications recommended for statistical analysis
+
+# Appendix
+
+## Model Files
+
+- `OAPM1.doe` - Arena model file for Model OAPM1
+- `OAPM2.doe` - Arena model file for Model OAPM2
+
+## Data Files
+
+- `OAPM1_report.xlsx` - Complete Arena output for Model OAPM1
+- `OAPM2_report.xlsx` - Complete Arena output for Model OAPM2
+

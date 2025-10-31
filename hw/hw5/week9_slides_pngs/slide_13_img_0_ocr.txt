@@ -1,0 +1,30 @@
+Compare
+Means via
+the Output
+Analyzer
+
+Confidence Interval on
+difference misses 0, so
+conclude that there Is
+a(statistically)
+significant difference
+
+Results:
+
+Compare Means - Total Cost Base Case.dat |) x|
+
+Paired-t Comparison of Means Diff |
+Difference in Total Cost 95% CL Vest Walue
+
+6e+003
+4.77e+003 | I 17 .23e+003
+
+Paired-T Means Comparison : Difference in Total Cost
+
+IDENTIFIER ESTD. MEAN STANDARD 0.950 C.I. MINIMUM
+DIFFERENCE DEVIATION HALF-WIDTH
+
+6et+003 1. ?2e+003 1.23e+003 2.98e+004 3. 7e+004
+2.6e+004 2.97e+004
+
+REJECT HO => MEANS ARE NOT EQUAL AT 0.05 LEVEL

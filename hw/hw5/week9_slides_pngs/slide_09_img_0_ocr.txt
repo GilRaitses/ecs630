@@ -1,0 +1,15 @@
+Confidence Intervals for Terminating Systems .
+
+¢ The Cross- Replication summary outputs as the basic data:
+
+Sample Mean S 33,904.98 10.2257 %
+Sample Standard Deviation 2,199.92 1.0483
+95% Confidence Interval Half Width 1,573.73 0.7499
+Minimum Summary Output Value 29,788.21 8.4871
+Maximum Summary Output Value 57,042.22 11.5966
+
+¢ 95% confidence interval on expected values
+
+¢ This information (except standard deviaton) is in Category Overview report
+- If >] replication specified, Arena uses cross-replication data as above
+- Other confidence levels, graphics - Output Analyzer

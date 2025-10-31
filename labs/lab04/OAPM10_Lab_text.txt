@@ -1,0 +1,11 @@
+Orange Auto Part Manufacturer (10)
+
+In an effort to minimize waste, the management for the OAPM has decided to recycle parts that
+failinspection. The plant manager responsible for the OAPM has decided to send a cart twice a
+day to pick up the parts that failed inspection: at 11 am and 3 pm. The plant manager has decided
+to incorporate the holding and releasing of parts to the OAPM in the simulation.
+
+Note: Assume that the OAPM's 8-hour daily shift begins at 9 am and goes until 5 pm.
+
+Run the model for five 8-hour days. The base time units should be minutes.
+Examine the effect of modeling the recycling hold on the throughput for failed inspection parts.

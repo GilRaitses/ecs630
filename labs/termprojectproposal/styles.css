@@ -1,0 +1,169 @@
+/* Cinnamoroll Color Palette */
+:root {
+  --cinnamoroll-light-blue: #B4D7EC;
+  --cinnamoroll-lavender: #E8D7F1;
+  --cinnamoroll-pink: #F5D4D8;
+  --cinnamoroll-cream: #FFF9F3;
+  --cinnamoroll-blue: #8AB4D3;
+  --cinnamoroll-dark-blue: #2C4A5F;
+  --cinnamoroll-brown: #5F4A3F;
+  --cinnamoroll-peach: #FFE5D9;
+}
+
+/* Background */
+.reveal {
+  background: var(--cinnamoroll-cream);
+  color: var(--cinnamoroll-dark-blue);
+  font-family: 'Avenir Next', sans-serif;
+}
+
+/* Headings */
+.reveal h1,
+.reveal h2,
+.reveal h3 {
+  color: var(--cinnamoroll-dark-blue);
+  font-family: 'Didot', serif;
+  font-weight: normal;
+}
+
+.reveal h1 {
+  color: var(--cinnamoroll-dark-blue);
+  border-bottom: 3px solid var(--cinnamoroll-light-blue);
+  padding-bottom: 0.3em;
+}
+
+.reveal h2 {
+  color: var(--cinnamoroll-dark-blue);
+  border-bottom: 2px solid var(--cinnamoroll-lavender);
+  padding-bottom: 0.2em;
+}
+
+/* Text */
+.reveal p {
+  color: var(--cinnamoroll-brown);
+  line-height: 1.6;
+}
+
+.reveal strong {
+  color: var(--cinnamoroll-dark-blue);
+  font-weight: 600;
+}
+
+/* Links */
+.reveal a {
+  color: var(--cinnamoroll-blue);
+}
+
+.reveal a:hover {
+  color: var(--cinnamoroll-pink);
+}
+
+/* Code blocks */
+.reveal pre {
+  background: var(--cinnamoroll-light-blue);
+  border: 2px solid var(--cinnamoroll-blue);
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.reveal code {
+  background: var(--cinnamoroll-light-blue);
+  color: var(--cinnamoroll-dark-blue);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* Tables */
+.reveal table {
+  border-collapse: collapse;
+  margin: 1em auto;
+  background: white;
+  border: 2px solid var(--cinnamoroll-light-blue);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.reveal table thead {
+  background: var(--cinnamoroll-light-blue);
+  color: var(--cinnamoroll-dark-blue);
+}
+
+.reveal table th {
+  padding: 0.8em;
+  font-weight: 600;
+  border-bottom: 2px solid var(--cinnamoroll-blue);
+}
+
+.reveal table td {
+  padding: 0.6em 0.8em;
+  border-bottom: 1px solid var(--cinnamoroll-lavender);
+}
+
+.reveal table tbody tr:nth-child(even) {
+  background: var(--cinnamoroll-cream);
+}
+
+.reveal table tbody tr:hover {
+  background: var(--cinnamoroll-lavender);
+}
+
+/* Blockquotes */
+.reveal blockquote {
+  border-left: 4px solid var(--cinnamoroll-pink);
+  background: var(--cinnamoroll-cream);
+  padding: 1em;
+  margin: 1em 0;
+  border-radius: 4px;
+}
+
+/* Slide backgrounds */
+.reveal .slides section {
+  background: var(--cinnamoroll-cream);
+  padding: 2em;
+  border-radius: 12px;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+}
+
+/* Progress bar */
+.reveal .progress {
+  background: var(--cinnamoroll-lavender);
+  height: 4px;
+}
+
+.reveal .progress span {
+  background: var(--cinnamoroll-pink);
+}
+
+/* Controls */
+.reveal .controls {
+  color: var(--cinnamoroll-blue);
+}
+
+.reveal .controls button {
+  color: var(--cinnamoroll-blue);
+}
+
+.reveal .controls button:hover {
+  color: var(--cinnamoroll-pink);
+}
+
+/* Footer */
+.reveal .footer {
+  color: var(--cinnamoroll-brown);
+  font-size: 0.8em;
+}
+
+/* Math */
+.reveal .MathJax {
+  color: var(--cinnamoroll-dark-blue);
+}
+
+/* Mermaid diagrams */
+.reveal .mermaid {
+  background: white;
+  padding: 1em;
+  border-radius: 8px;
+  border: 2px solid var(--cinnamoroll-light-blue);
+}
+

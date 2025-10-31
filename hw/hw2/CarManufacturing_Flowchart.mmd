@@ -1,0 +1,26 @@
+flowchart TD
+    A[START] --> B[Set initial conditions:<br/>D = 0, COO = 0, COT = 0]
+    B --> C[Increment D]
+    C --> D[Generate NPD<br/>number of orders]
+    D --> E[TON = 0 reset]
+    E --> F[For each order i<br/>i = 1 to NPD]
+    F --> G[Generate FOA<br/>type A?]
+    G --> H{FOA = 1?}
+    H -->|Yes| I[PR = 3 pieces/hr]
+    H -->|No| J[PR = 5 pieces/hr]
+    I --> K[Generate SO<br/>order size 50-100]
+    J --> K
+    K --> L[Time needed = SO / PR]
+    L --> M[TON = TON + Time needed]
+    M --> N{More orders?}
+    N -->|Yes| G
+    N -->|No| O[TOO = NW × 8<br/>total available hours]
+    O --> P{TON > TOO?}
+    P -->|Yes| Q[COO = TON - TOO]
+    P -->|No| R[COO = 0]
+    Q --> S[COT = COT + COO]
+    R --> S
+    S --> T[Record D, NPD, TON, TOO, COO, COT]
+    T --> U{Simulation end?}
+    U -->|No| C
+    U -->|Yes| V[END]

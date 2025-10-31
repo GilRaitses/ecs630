@@ -1,0 +1,23 @@
+Half Width and Number of Replications (conta),
+
+¢ Set half-width =h, solve forn = tata h2
+
+¢ Approximation:
+- Replace t by z, corresponding normal critical value
+
+- Pretend that current s will hold for larger samples
+- Get
+
+2
+n =(z2 S Ss = sample standard deviation from
+7 1-a/2} fy2 “initial” number s, of replications
+
+¢ Easier but different approximation
+
+~ n grows quadratically as h decreases
+Nn =in
+FE
+
+h, = half width from “initial” number n, of replications
+
+2 of 2

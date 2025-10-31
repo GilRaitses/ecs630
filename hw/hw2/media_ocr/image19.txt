@@ -1,0 +1,11 @@
+Nomenclature
+
+D = day
+
+L = liters of water in the deposit
+
+NDR = the next day it rains
+
+xX = inter-rainy days <— exp(10)
+
+y = liters of rain captured in a rainy day <— Normal (800000, 5000)

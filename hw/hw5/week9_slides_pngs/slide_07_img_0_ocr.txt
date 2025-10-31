@@ -1,0 +1,15 @@
+Model 5-3: Overall Call-Center Stats Results
+
+¢ Results from 5 replications
+- Base Case: no additional staff, still 26 trunk lines
+Total Cost = $22,242.55 + $1,439.47
+Percent Rejected = 11.96% + 1.39%
+- Add 3 of each of five staff types, 3 more trunk lines
+Total Cost = $23,683.35 + $616.00
+Percent Rejected = 1.61% +1.52%
+¢ Use in Chap. 6 for statistically valid experiments
+- Statistical precision
+- Compare several alternatives, select best
+- Search for configuration that minimizes cost, subject to upper limit
+on percent rejected
+

@@ -1,0 +1,527 @@
+---
+title: "Term Project Proposal: Stimulus-Driven Behavioral Modeling of Drosophila Larvae"
+subtitle: "Event-Hazard Modeling of Turn Initiation and Trajectory Simulation"
+author: "Gil Raitses"
+date: today
+abstract: |
+  \tech{Behavioral responses} to \tech{time-varying stimuli} in \tech{Drosophila larvae} exhibit complex \tech{temporal dynamics} with \tech{latency-dependent} and \tech{intensity-dependent} patterns. This project develops a \tech{stimulus-locked event-hazard model} for \tech{turn initiation} and \tech{run-stop transitions} using \tech{generalized linear models} with \tech{temporal kernel bases} to capture stimulus-response relationships. The model estimates time-varying hazard rates for behavioral events conditioned on \tech{stimulus intensity}, \tech{temporal history}, and \tech{contextual features} (speed, orientation, wall proximity). Using a \tech{design of experiments} framework with \tech{stimulus intensity}, \tech{pulse duration}, and \tech{inter-pulse interval} as factors, the analysis generates \tech{simulated trajectories} that reproduce observed \tech{key performance indicators} including mean turn rate, latency to first turn, stop fraction, and spatial distribution metrics. \tech{Confidence intervals} for behavioral metrics ensure statistical precision comparable to \tech{Arena simulation replications}, enabling validation of model predictions against empirical larval trajectory data.
+format:
+  pdf:
+    documentclass: article
+    geometry:
+      - margin=1in
+    fig-dpi: 300
+    toc: false
+    number-sections: true
+    pdf-engine: lualatex
+header-includes: |
+  \usepackage{fontspec}
+  \setmainfont{Avenir Next}[
+    UprightFont = *-UltraLight,
+    BoldFont = *-Medium,
+    ItalicFont = *-UltraLightItalic,
+    BoldItalicFont = *-MediumItalic
+  ]
+  \newfontfamily\headingfont{Didot}
+  \newfontfamily\numfont{Avenir Next Regular}
+  \newfontfamily\techfont{Avenir Next Medium}
+  \usepackage{xcolor}
+  \newcommand{\num}[1]{{\numfont\textcolor[gray]{0.3}{#1}}}
+  \newcommand{\tech}[1]{{\techfont\textcolor[RGB]{105,100,100}{#1}}}
+  \usepackage{sectsty}
+  \allsectionsfont{\headingfont}
+  \subsectionfont{\headingfont\itshape\color[RGB]{90,60,60}}
+  \subsubsectionfont{\headingfont\itshape\color[RGB]{90,60,60}}
+  \renewcommand{\thesubsection}{\hspace{-1em}}
+  \renewcommand{\thesubsubsection}{\hspace{-1em}}
+  \usepackage{tikz}
+  \usetikzlibrary{shapes.geometric, arrows.meta, positioning, shadows}
+  \usepackage{float}
+  \usepackage{placeins}
+  \usepackage{needspace}
+  \usepackage{etoolbox}
+  \usepackage{caption}
+  \makeatletter
+  \preto\section{\needspace{6\baselineskip}}
+  \preto\subsection{\needspace{6\baselineskip}}
+  \preto\subsubsection{\needspace{6\baselineskip}}
+  \makeatother
+  \captionsetup{margin=0.5in, font=small}
+  \setlength{\floatsep}{1.5em}
+  \setlength{\textfloatsep}{1.5em}
+  \newenvironment{insetfigure}{\begin{adjustwidth}{0.5in}{0.5in}}{\end{adjustwidth}}
+  \usepackage{changepage}
+  \usepackage{amsmath}
+  \usepackage{bm}
+  \tikzstyle{process} = [regular polygon, regular polygon sides=6, minimum width=3.5cm, minimum height=2cm, text centered, text width=2.5cm, draw=black!80, fill=gray!20, line width=1.2pt, drop shadow]
+  \tikzstyle{arrow} = [ultra thick,->,>=stealth, draw=black!70]
+execute:
+  python: /Users/gilraitses/ecs630/labs/lab01/venv/bin/python3
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 10,
+  fig.height = 6,
+  dpi = 300
+)
+
+# Load required libraries
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(knitr)
+library(kableExtra)
+library(tidyr)
+library(cowplot)
+library(grid)
+library(showtext)
+
+# Add EB Garamond font
+font_add(family = "EB Garamond", 
+         regular = "~/Library/Fonts/EBGaramond12-Regular.otf")
+showtext_auto()
+```
+
+# Introduction
+
+This term project proposes to develop a \tech{stimulus-response modeling framework} for \tech{Drosophila larval behavior} using \tech{event-hazard methods} from \tech{survival analysis} and \tech{generalized linear models}. The project leverages existing trajectory data from mechanosensation experiments to estimate time-varying hazard rates for behavioral events (turns, stops, reversals) conditioned on \tech{LED stimulus intensity}, \tech{temporal history}, and \tech{contextual features}. The model will be used to simulate trajectories under different \tech{experimental conditions} specified through a \tech{design of experiments} framework, enabling prediction of behavioral metrics and validation against empirical observations.
+
+The project connects simulation modeling methods from \tech{ECS630} with biological data analysis, demonstrating how \tech{discrete-event simulation principles} apply to \tech{behavioral systems} where events (behavioral transitions) occur stochastically as functions of external stimuli and internal state. Results will be reported using \tech{Arena-style summary statistics} including \tech{across-replications summaries}, \tech{confidence intervals}, and \tech{performance metrics} analogous to manufacturing system analysis.
+
+# Problem Statement
+
+## Research Question
+
+How can we model \tech{larval behavioral responses} to \tech{time-varying LED stimuli} using \tech{event-hazard methods} to predict \tech{turn initiation rates}, \tech{behavioral state transitions}, and \tech{trajectory-level statistics}?
+
+## Dataset Characteristics
+
+The mechanosensation dataset contains:
+
+- **Trajectory Data**: Individual larval tracks with position coordinates, speeds, orientations, and behavioral events (runs, reorientations, head swings)
+- **Stimulus Data**: LED intensity values synchronized to video frames, with stimulus onset times, pulse durations, and inter-pulse intervals
+- **Experimental Conditions**: Multiple experiments with varying stimulus intensities (0-100\% LED power), pulse frequencies, and temporal patterns
+- **Sample Size**: \num{40+} larvae per condition, multiple replications per experimental condition
+
+## Modeling Challenge
+
+Behavioral events occur stochastically with rates that depend on:
+1. **Stimulus features**: Current intensity, recent history (adaptation/habituation), pulse timing
+2. **Contextual features**: Current speed, orientation relative to stimulus source, distance to arena walls
+3. **Individual heterogeneity**: Larva-to-larva variation in baseline activity and sensitivity
+
+Traditional approaches use simple rate averages or linear regressions. This project develops a \tech{structured hazard model} that captures temporal dependencies and enables trajectory simulation.
+
+# Proposed Methodology
+
+## Core Model: Stimulus-Locked Event-Hazard GLM
+
+For each behavioral event type $E \in \{\text{turn}, \text{stop}, \text{reverse}\}$, define the time-varying hazard rate:
+
+$$\lambda_E(t) = \exp\left\{ \beta_{0,E} + \phi_E^\top [s \star \kappa](t) + \mathbf{x}(t)^\top \mathbf{\beta}_E \right\}$$
+
+where:
+
+- $\beta_{0,E}$: Baseline log-hazard for event type $E$
+- $s(t)$: Stimulus feature vector (intensity, on/off state, recent history)
+- $\kappa$: Temporal kernel (basis expansion capturing latency and adaptation)
+- $[s \star \kappa](t)$: Convolution of stimulus with kernel (stimulus history features)
+- $\mathbf{x}(t)$: Contextual features (speed, orientation, wall distance)
+- $\mathbf{\beta}_E$: Feature coefficients
+
+### Temporal Kernel Design
+
+The kernel $\kappa(\tau)$ captures:
+- **Latency effects**: Peak response at delay $\tau_0 \approx 0.5-2$ seconds
+- **Adaptation**: Decay over longer delays ($\tau > 5$ seconds)
+- **Anticipation**: Pre-stimulus effects (if any)
+
+Using raised cosine basis functions:
+$$\kappa(\tau) = \sum_{j=1}^{J} w_j \cos^2\left(\frac{\pi(\tau - \tau_j)}{2\Delta\tau}\right) \mathbf{1}_{[\tau_j-\Delta\tau, \tau_j+\Delta\tau]}(\tau)$$
+
+with knots $\tau_j$ spanning $[-2, 20]$ seconds relative to stimulus onset.
+
+### Event Likelihood and Estimation
+
+For larva $i$ with observed events at times $\{t_{i,k}\}$, the log-likelihood is:
+
+$$\ell(\mathbf{\beta}) = \sum_i \sum_k \log \lambda_E(t_{i,k}) - \int_0^{T_i} \lambda_E(t) dt$$
+
+Estimation via \tech{penalized maximum likelihood} with $L_2$ regularization:
+
+$$\hat{\mathbf{\beta}} = \arg\max \left\{ \ell(\mathbf{\beta}) - \lambda_{\text{reg}} \|\mathbf{\beta}\|_2^2 \right\}$$
+
+### Model Validation
+
+- **Time-rescaled KS test**: Transform observed event times $t_k \to \int_0^{t_k} \lambda_E(t) dt$; under correct model, these should be Poisson process increments.
+- **Predictive log-likelihood**: Holdout larvae for each experimental condition.
+- **Peri-stimulus time histograms (PSTHs)**: Compare model-predicted vs. observed event rates around stimulus onsets.
+
+## Trajectory Simulation
+
+Given fitted hazard model, simulate trajectories:
+
+1. **Initialize**: Starting position, orientation, speed from empirical distributions
+2. **Event generation**: Sample next event time $t^*$ from $\lambda_E(t)$ using thinning algorithm
+3. **Event execution**: If turn, sample new orientation; if stop, pause; if reverse, flip direction
+4. **State update**: Update position via forward Euler integration with current speed/orientation
+5. **Repeat**: Until maximum simulation time reached
+
+### Speed Dynamics
+
+Run speeds follow observed empirical distributions (typically log-normal). During runs, integrate:
+$$\mathbf{x}(t+\Delta t) = \mathbf{x}(t) + v(t) \Delta t \cdot [\cos(\theta(t)), \sin(\theta(t))]^\top$$
+
+where $v(t)$ is current speed and $\theta(t)$ is current heading.
+
+## Design of Experiments
+
+### Factors and Levels
+
+| Factor | Low | Medium | High | Units |
+|--------|-----|--------|------|-------|
+| Stimulus Intensity | 0-25\% | 50-75\% | 100\% | LED power |
+| Pulse Duration | 0.5 s | 1.0 s | 2.0 s | Seconds |
+| Inter-Pulse Interval | 5 s | 10 s | 20 s | Seconds |
+
+### Response Variables (KPIs)
+
+1. **Turn Rate**: Reorientations per minute (reorientations/min)
+2. **Latency to First Turn**: Time from stimulus onset to first turn (seconds)
+3. **Stop Fraction**: Proportion of time spent stopped (dimensionless)
+4. **Pause Rate**: Pauses per minute (pauses/min)
+5. **Path Tortuosity**: Net displacement / path length (dimensionless)
+6. **Spatial Dispersal**: Mean distance from starting position (pixels)
+7. **Mean Spine Curve Energy**: Average curvature energy along body axis (dimensionless)
+
+### Experimental Design
+
+**Full factorial design**: $3^3 = 27$ conditions. For each condition:
+- Run \num{30} simulation replications (each representing one larva)
+- Record events and compute KPIs per replication
+- Generate \tech{AcrossReplicationsSummary.csv} with means and confidence intervals
+
+### Run Length Determination
+
+Based on Lab04 CI methodology:
+
+- Target precision: \num{10}\% half-width for mean turn rate (e.g., if mean = \num{5} turns/min, want CI width < \num{0.5} turns/min)
+- Pilot study: Run \num{10} replications, estimate variance $\hat{\sigma}^2$
+- Required replications: $n \geq \left(\frac{z_{\alpha/2} \hat{\sigma}}{E}\right)^2$ where $E$ is desired half-width
+- If $n > 30$, increase to $n$; otherwise use \num{30} as minimum
+
+# Analysis Plan
+
+## Data Preprocessing
+
+### Input Data Sources
+
+1. **H5 Files**: Exported MAGAT experiment data in HDF5 format (e.g., `GMR61_202509051201_tier1.h5`)
+   - Contains trajectory positions, LED stimulus data, and metadata
+   - Located in `/Users/gilraitses/mechanosensation/h5tests/`
+   - Processed using `scripts/engineer_dataset_from_h5.py`
+2. **Trajectory CSVs**: `output/spatial_analysis/runs.csv`, `reorientations.csv` (if needed as backup)
+3. **Stimulus CSVs**: `led_stimulus_data_*.csv` with frame-level LED values (if needed as backup)
+4. **Experimental Metadata**: Experiment IDs, conditions, replication numbers
+
+### Feature Extraction
+
+**Step 1: Extract from H5 Files**
+
+```bash
+python3 scripts/engineer_dataset_from_h5.py \
+    --h5-dir /Users/gilraitses/mechanosensation/h5tests \
+    --output-dir data/engineered \
+    --experiment-id GMR61_202509051201
+```
+
+This creates:
+- `{experiment_id}_events.csv`: Event records with 50ms time bins
+- `{experiment_id}_trajectories.csv`: Full trajectory data aligned with stimulus
+- `{experiment_id}_summary.json`: Summary statistics
+
+**Step 2: Feature Engineering** (implemented in `engineer_dataset_from_h5.py`)
+
+```python
+# For each larva trajectory from H5:
+for each track in h5_file['tracks']:
+    # Extract positions (x, y) and compute derived features
+    positions = track['positions']  # N×2 array
+    speed = compute_speed(positions, frame_rate=20)
+    heading = compute_heading(positions)
+    heading_change = detect_turns(heading, threshold=30°)
+    
+    # Time-align with stimulus data
+    stimulus_df = extract_stimulus_timing(h5_file['led_data'])
+    aligned_df = align_trajectory_with_stimulus(trajectory_df, stimulus_df)
+    
+    # Create time bins (50ms)
+    bin_width = 0.05
+    binned = aggregate_to_bins(aligned_df, bin_width)
+    
+    # Create stimulus kernel features (in fit_hazard_model.py)
+    for each bin:
+        stimulus_history = extract_stimulus_window(time_window=[-2, 20])
+        kernel_features = apply_temporal_kernel(stimulus_history, basis_functions)
+        feature_vector = [kernel_features, speed, heading, wall_dist]
+        event_occurred = (binned['is_turn'] == True)
+```
+
+### Model Fitting Pipeline
+
+1. **Event detection**: Identify turn starts, stop starts, reversal starts from trajectory data
+2. **Feature matrix construction**: Create $N \times P$ matrix where $N$ = total time bins across all larvae, $P$ = number of features
+3. **GLM fitting**: Use `sklearn.linear_model.LogisticRegression` or `statsmodels` for Poisson GLM
+4. **Cross-validation**: Leave-one-larva-out CV to assess generalization
+5. **Kernel visualization**: Plot fitted kernel $\hat{\kappa}(\tau)$ to interpret temporal response
+
+## Simulation and DOE Execution
+
+### Simulation Engine
+
+```python
+class LarvalTrajectorySimulator:
+    def __init__(self, hazard_model, speed_distribution, arena_bounds):
+        self.hazard_model = hazard_model
+        self.speed_dist = speed_distribution
+        self.arena = arena_bounds
+    
+    def simulate(self, stimulus_schedule, max_time, random_seed):
+        # Initialize state
+        position = sample_starting_position()
+        orientation = sample_starting_orientation()
+        speed = self.speed_dist.sample()
+        
+        events = []
+        t = 0
+        
+        while t < max_time:
+            # Compute current hazard
+            lambda_t = self.hazard_model.predict(
+                stimulus=stimulus_schedule(t),
+                speed=speed,
+                orientation=orientation,
+                wall_dist=compute_wall_distance(position)
+            )
+            
+            # Sample next event time (thinning algorithm)
+            next_event_time = sample_from_hazard(lambda_t, current_time=t)
+            
+            # Execute event
+            if next_event_time < max_time:
+                event_type = sample_event_type(lambda_t)  # turn, stop, reverse
+                events.append((next_event_time, event_type))
+                
+                # Update state based on event
+                if event_type == 'turn':
+                    orientation = sample_new_orientation(orientation)
+                elif event_type == 'stop':
+                    speed = 0
+                elif event_type == 'reverse':
+                    orientation = flip_orientation(orientation)
+            
+            # Update position
+            dt = min(next_event_time - t, 0.1)  # 100ms integration step
+            position += speed * dt * [cos(orientation), sin(orientation)]
+            t = next_event_time
+        
+        return Trajectory(position_history, events)
+```
+
+### DOE Execution
+
+For each of 27 conditions:
+
+```python
+results = []
+for condition in doe_table:
+    for replication in range(30):
+        # Set stimulus schedule from condition
+        stimulus = create_stimulus_schedule(
+            intensity=condition.intensity,
+            pulse_duration=condition.pulse_duration,
+            inter_pulse_interval=condition.inter_pulse_interval
+        )
+        
+        # Simulate trajectory
+        traj = simulator.simulate(stimulus, max_time=300, random_seed=replication)
+        
+        # Compute KPIs
+        kpis = compute_kpis(traj)
+        results.append({
+            'condition': condition.id,
+            'replication': replication,
+            **kpis
+        })
+
+# Export to Arena-style CSV
+export_to_arena_format(results, 'AcrossReplicationsSummary.csv')
+```
+
+## Statistical Analysis
+
+### Performance Metrics Calculation
+
+For each KPI and condition:
+
+- **Mean**: $\bar{X} = \frac{1}{n}\sum_{i=1}^n X_i$
+- **Standard Deviation**: $s = \sqrt{\frac{1}{n-1}\sum_{i=1}^n (X_i - \bar{X})^2}$
+- **95\% Confidence Interval**: $\bar{X} \pm t_{0.025,n-1} \frac{s}{\sqrt{n}}$
+- **Minimum/Maximum**: $\min_i X_i$, $\max_i X_i$
+
+### Model Validation Metrics
+
+1. **Holdout log-likelihood**: Compare to null model (constant hazard)
+2. **KS test p-value**: Time-rescaled event times should be uniform
+3. **PSTH correlation**: Model-predicted vs. observed peri-stimulus histograms
+4. **Trajectory-level statistics**: Compare simulated vs. empirical distributions of KPIs
+
+# Expected Deliverables
+
+## Report Components
+
+1. **Model Specification**: Mathematical formulation, kernel design, estimation procedure
+2. **Data Description**: Dataset characteristics, preprocessing steps, feature engineering
+3. **Model Fitting Results**: Fitted kernels, coefficients, validation metrics
+4. **DOE Results**: AcrossReplicationsSummary tables, main effects, interaction plots
+5. **Simulation Validation**: Comparison of simulated vs. empirical KPIs
+6. **Confidence Intervals**: CI construction methodology, run length justification
+
+## Supporting Files
+
+1. **Model Code**: Python scripts for fitting (`fit_hazard_model.py`), simulation (`simulate_trajectories.py`), DOE execution (`run_doe.py`)
+2. **Data Exports**: Arena-style CSV files (`AcrossReplicationsSummary.csv`, `ContinuousTimeStatsByRep.csv`, `DiscreteTimeStatsByRep.csv`)
+3. **DOE Table**: `doe_table.csv` with 27 conditions and factor levels
+4. **Configuration**: `config.json` with model parameters, simulation settings, CI targets
+
+## Format Requirements
+
+- **Quarto Report**: `TermProject_Report.qmd` rendering to PDF
+- **Style**: Match Lab01/Lab02 formatting (Avenir Next, Didot headings, technical terminology)
+- **Figures**: Kernel plots, PSTHs, KPI comparisons, interaction plots
+- **Tables**: DOE table, AcrossReplicationsSummary, model coefficients
+
+# Timeline and Milestones
+
+## Week 1: Data Preparation and Exploration
+- Load and inspect trajectory/stimulus data
+- Implement feature extraction pipeline
+- Compute empirical KPIs for baseline conditions
+- **Deliverable**: Data exploration notebook, baseline statistics
+
+## Week 2: Model Development
+- Implement temporal kernel basis functions
+- Build GLM fitting pipeline
+- Fit baseline model (null: constant hazard)
+- Assess initial fit quality
+- **Deliverable**: Fitted null model, kernel visualization code
+
+## Week 3: Hazard Model Fitting
+- Fit stimulus-locked hazard models for turns/stops/reversals
+- Cross-validation and hyperparameter tuning
+- Model validation (KS tests, PSTH comparisons)
+- **Deliverable**: Fitted models, validation report
+
+## Week 4: Simulation Engine Development
+- Implement trajectory simulator
+- Test on simple stimulus schedules
+- Validate simulated KPIs match empirical for known conditions
+- **Deliverable**: Working simulator, validation results
+
+## Week 5: DOE Execution and Analysis
+- Run full factorial design (27 conditions × 30 replications)
+- Generate AcrossReplicationsSummary CSVs
+- Compute confidence intervals
+- Analyze main effects and interactions
+- **Deliverable**: Complete DOE results, summary tables
+
+## Week 6: Report Writing and Finalization
+- Write Quarto report with all sections
+- Generate figures and tables
+- Final model validation against holdout data
+- **Deliverable**: Final report PDF, supporting code/data
+
+# Risk Assessment and Mitigation
+
+## Technical Risks
+
+**Risk 1**: Temporal alignment between stimulus and behavior data may be inaccurate.
+- **Mitigation**: Use validated synchronization methods (MAGAT `addTonToff`); implement unit tests for alignment; visually inspect PSTHs for timing errors.
+
+**Risk 2**: Model may overfit to training data with complex kernel.
+- **Mitigation**: Use cross-validation; apply $L_2$ regularization; limit kernel complexity (fewer basis functions); compare AIC/BIC across models.
+
+**Risk 3**: Individual heterogeneity may violate exchangeability assumption.
+- **Mitigation**: Include larva-specific random effects if needed; stratify analysis by experimental batch; use hierarchical models if time permits.
+
+**Risk 4**: Simulation may not capture spatial constraints (wall interactions).
+- **Mitigation**: Include wall distance in feature vector; implement boundary conditions in simulator; validate spatial distributions match empirical.
+
+## Data Risks
+
+**Risk 5**: Insufficient data for some experimental conditions.
+- **Mitigation**: Pool similar conditions; use data augmentation (bootstrap resampling); report sample sizes per condition.
+
+**Risk 6**: Missing or corrupted trajectory segments.
+- **Mitigation**: Implement robust data validation; exclude problematic trajectories; report exclusion criteria in methods.
+
+## Timeline Risks
+
+**Risk 7**: Model fitting may take longer than expected.
+- **Mitigation**: Start with simplified model (fewer features); use existing GLM libraries; parallelize over larvae if needed.
+
+**Risk 8**: Simulation may be computationally expensive for 810 total runs (27 × 30).
+- **Mitigation**: Optimize simulation code; run overnight batches; use cloud computing if needed; reduce replications if CI targets still met.
+
+# Success Criteria
+
+## Model Performance Targets
+
+1. **Predictive Accuracy**: Holdout log-likelihood improvement ≥ \num{20}\% over null model
+2. **Temporal Fidelity**: KS test p-value > \num{0.05} (model not rejected)
+3. **Kernel Interpretability**: Fitted kernel shows biologically plausible latency (peak 0.5-2 s)
+
+## Simulation Validation Targets
+
+1. **KPI Accuracy**: Simulated mean turn rates within \num{95}\% CI of empirical for baseline conditions
+2. **Distribution Match**: Simulated KPI distributions pass two-sample KS test vs. empirical (p > \num{0.05})
+3. **DOE Consistency**: Main effects show expected signs (higher intensity → higher turn rate)
+
+## Deliverable Quality Targets
+
+1. **Report Completeness**: All sections present, figures/tables clear, methods reproducible
+2. **Code Quality**: Well-documented scripts, configuration files, unit tests where feasible
+3. **Data Format**: CSVs match Arena output format, readable by standard tools
+
+# Conclusion
+
+This project applies \tech{simulation modeling methods} from \tech{ECS630} to \tech{biological behavioral data}, developing a \tech{stimulus-response model} that can predict and simulate larval trajectories under different experimental conditions. The \tech{event-hazard framework} provides a principled approach to modeling stochastic behavioral events, while the \tech{DOE methodology} enables systematic exploration of stimulus parameter space. Results will be reported using \tech{Arena-style statistics} including \tech{confidence intervals} and \tech{across-replications summaries}, demonstrating how simulation principles extend beyond manufacturing systems to biological processes.
+
+# Appendix
+
+## Data Sources
+
+- **Primary H5 Files**: `/Users/gilraitses/mechanosensation/h5tests/`
+  - `GMR61_202509051201_tier1.h5` (16 MB): Complete experiment with tracks and LED data
+  - `GMR61_tier2_complete.h5` (83 MB): Full tier2 export with contours
+  - `GMR61_202509051201_tier3.h5` (701 KB): Tier3 export with FID data
+- **Backup CSV Data**: `/Users/gilraitses/mechanosensation/output/spatial_analysis/`
+- **Stimulus Data**: `/Users/gilraitses/mechanosensation/led_stimulus_data_*.csv` (if needed)
+- **Experimental Metadata**: Experiment IDs embedded in H5 metadata or trajectory CSVs
+
+## Model Implementation References
+
+- **Survival Analysis**: Collett (2015) *Modelling Survival Data in Medical Research*
+- **Point Process GLMs**: Berman & Turner (1992) "Approximating point process likelihoods with GLIM"
+- **Temporal Kernels**: Pillow et al. (2008) "Spatio-temporal correlations and visual signalling"
+
+## Software Tools
+
+- **Python**: `scikit-learn`, `statsmodels`, `numpy`, `pandas` for modeling
+- **R**: `ggplot2`, `knitr`, `kableExtra` for report generation
+- **MATLAB**: MAGAT API for data loading (if needed)
+

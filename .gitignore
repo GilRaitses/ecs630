@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Quarto
+*_files/
+*.html
+*.pdf
+*.aux
+*.log
+*.out
+*.toc
+
+# Data files
+*.h5
+*.csv
+*.xlsx
+*.xls
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Keep rendered presentation
+!Simulation_Presentation.html
+!index.html
+

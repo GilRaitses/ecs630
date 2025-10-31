@@ -1,0 +1,17 @@
+Nomenclature
+
+D = Day
+
+NW = the number of workers
+NM = the number of machines
+NW = NM
+
+COO = cost of overtime
+COT = total cost
+
+NPD = number of orders ina single day (determined by a given distribution)
+FOA = whether the current order is in type A(determined by a given distribution)
+SO = the size of the order (determined by a uniform distribution (50 ~ 100))
+
+TON = total needed time for production in a single day (hour)
+TOO = total working time of all workers without overtime in a single day (hour)

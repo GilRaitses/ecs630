@@ -1,0 +1,19 @@
+flowchart TD
+  A[Start] --> B[Get next u_INT from Table 1]
+  B --> C[Map u_INT via INT CDF → INT_k]
+  C --> D[Update DOA: DOA_k = DOA_{k-1} + INT_k]
+  D --> E{Train arrival event?}
+  E -- Yes --> F[Add 500 tons: PLI = PLI + 500]
+  E -- No --> G[No addition]
+  F --> H[Get next u_TOC from Table 1]
+  G --> H
+  H --> I[Map u_TOC via TOC CDF → TOC_k]
+  I --> J[Remove coal: PLI = max(0, PLI − TOC_k)]
+  J --> K[Record D, DOA, INT_k, TOC_k, PLI, CCT]
+  K --> L{Iterations < 6?}
+  L -- Yes --> B
+  L -- No --> M[End]
+
+  subgraph Inverse_Transform [Inverse Transform]
+    X[u in [0,1)] --> Y[Find first CDF ≥ u] --> Z[Emit outcome]
+  end

@@ -1,0 +1,563 @@
+---
+title: "Behavioral Simulation of Drosophila Larvae"
+subtitle: "Data Engineering, DOE Design, and Event-Hazard Modeling"
+author: "Gil Raitses"
+date: today
+format:
+  revealjs:
+    theme: simple
+    transition: slide
+    highlight-style: github
+    slide-number: true
+    self-contained: true
+    menu:
+      enabled: true
+    footer: "ECS630 Simulation Modeling | Term Project"
+    css: styles.css
+execute:
+  echo: false
+  warning: false
+  message: false
+header-includes: |
+  \usepackage{fontspec}
+  \setmainfont{Avenir Next}[
+    UprightFont = *-UltraLight,
+    BoldFont = *-Medium,
+    ItalicFont = *-UltraLightItalic,
+    BoldItalicFont = *-MediumItalic
+  ]
+  \newfontfamily\headingfont{Didot}
+  \newfontfamily\numfont{Avenir Next Regular}
+  \newfontfamily\techfont{Avenir Next Medium}
+  \usepackage{xcolor}
+  \newcommand{\num}[1]{{\numfont\textcolor[gray]{0.3}{#1}}}
+  \newcommand{\tech}[1]{{\techfont\textcolor[RGB]{105,100,100}{#1}}}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 10,
+  fig.height = 6,
+  dpi = 300
+)
+
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(knitr)
+library(kableExtra)
+library(tidyr)
+library(cowplot)
+library(grid)
+library(showtext)
+```
+
+## Overview
+
+This presentation describes a \tech{stimulus-response modeling framework} for \tech{Drosophila larval behavior} using \tech{event-hazard methods} from \tech{survival analysis}. The project develops \tech{generalized linear models} to predict behavioral events (turns, stops, reversals) as functions of \tech{LED stimulus intensity}, \tech{temporal history}, and \tech{contextual features}, enabling simulation-based prediction of behavioral metrics through a \tech{design of experiments} framework.
+
+The methodology connects \tech{discrete-event simulation principles} with biological data analysis, demonstrating how stochastic events occur as functions of external stimuli and internal state. Results are reported using \tech{Arena-style summary statistics} including \tech{across-replications summaries}, \tech{confidence intervals}, and \tech{performance metrics} analogous to manufacturing system analysis.
+
+## Course Foundations
+
+Our class labs established a consistent thread from conceptual modeling to quantitative verification. \tech{Week9\_Scripts\_and\_Methods.qmd} emphasized the discipline of characterizing inputs before touching model code, while \tech{Lab02\_OAPM3\_Report.qmd} walked through output interpretation and confidence-interval reasoning using Arena experiments. The homework sequence on replication-length learning carried those ideas into practice by forcing us to justify run length with statistical evidence. This project presentation keeps that scaffold so classmates can map the mechanosensation proposal onto the simulation toolkit we have used all term.
+
+## Input Characterization
+
+Input analysis from \tech{Lab02} required building empirical distributions, autocorrelation checks, and seasonality diagnostics prior to any Arena modeling. The same philosophy guides the larval stimulus work: we treat LED pulse trains and behavioral state transitions as stochastic inputs that must be summarized before model construction. Input fidelity determines whether hazard models see realistic stimulus histories, so we preserve the class discipline of histogramming, goodness-of-fit testing, and visual diagnostics before moving into DOE configuration.
+
+```{r input-analysis-table, echo=FALSE}
+input_analysis <- data.frame(
+  Element = c("Stimulus PWM Series", "Cycle Timing", "Behavioral State Seeds"),
+  Class_Practice = c("Histogram + empirical CDF (Lab02)",
+                    "Autocorrelation and period detection (Homework replication study)",
+                    "Goodness-of-fit tests for initial states (Week9 methods)"),
+  Application = c("LED intensity distribution per experiment",
+                  "Extracted 20 s cycles with tolerance bands",
+                  "Empirical run/pause proportions for initialization")
+)
+
+kable(input_analysis,
+      caption = "\\tech{Input Analysis Carryover from Course Labs}",
+      format = "html",
+      booktabs = TRUE,
+      col.names = c("Input Element", "Class Technique", "Application in Proposal")) %>%
+  kable_styling(latex_options = c("striped", "hold_position"),
+                bootstrap_options = c("striped", "hover"))
+```
+
+## Output Diagnostics
+
+Our Arena assignments never accepted raw averages without context: \tech{Lab02\_OAPM3} required residual plots, warm-up removal checks, and a narrative linking behavior to histogram shape. The mechanosensation workflow mirrors that structure. Before trusting DOE outputs we examine turn-rate distributions, latency histograms, and pause-rate boxplots per condition, matching the course expectation that every KPI be paired with a diagnostic to detect drift or multimodality. This ensures that when we later compare main effects, we are doing so with numerically trustworthy response measures.
+
+```{r output-analysis-table, echo=FALSE}
+output_analysis <- data.frame(
+  KPI = c("Turn Rate", "Latency", "Pause Rate"),
+  Course_Diagnostic = c("Histogram + running mean stability (Lab02)",
+                       "Warm-up truncation analysis (Week9)",
+                       "Boxplot with variance comparison (Homework CI task)"),
+  Proposal_Diagnostic = c("Stimulus-locked histograms per cycle",
+                          "Integration-window timing check",
+                          "Speed-threshold verification table")
+)
+
+kable(output_analysis,
+      caption = "\\tech{Output Diagnostics Mirroring Course Exercises}",
+      format = "html",
+      booktabs = TRUE,
+      col.names = c("KPI", "Class Diagnostic", "Proposal Diagnostic")) %>%
+  kable_styling(latex_options = c("striped", "hold_position"),
+                bootstrap_options = c("striped", "hover"))
+```
+
+## Replication Length Learning
+
+The replication-length homework emphasized sequential estimation: run limited replications, evaluate half-width against precision targets, and only extend run length when intervals remained too wide. Our DOE pipeline follows that same philosophy. We executed short pilot batches, measured half-widths on turn rate and latency, then justified the \num{30}-replication choice per condition because it met the class-standard precision of keeping relative half-width below ten percent. This slide in the deck will let classmates immediately connect the larval simulations to the replication policies practiced in Arena.
+
+```{r replication-learning-table, echo=FALSE}
+replication_learning <- data.frame(
+  Stage = c("Pilot Batch", "Half-Width Evaluation", "Replication Decision"),
+  Course_Link = c("Replication-length assignment", "Confidence interval monitoring (Homework)", "Arena policy from Lab02"),
+  Mechanosensation_Action = c("5 replications per DOE condition to estimate variance",
+                              "Computed half-width on turn rate and latency using t-multipliers",
+                              "Selected 30 replications because half-width < 10% of mean")
+)
+
+kable(replication_learning,
+      caption = "\\tech{Replication-Length Learning Workflow}",
+      format = "html",
+      booktabs = TRUE,
+      col.names = c("Stage", "Course Connection", "Action in Proposal")) %>%
+  kable_styling(latex_options = c("striped", "hold_position"),
+                bootstrap_options = c("striped", "hover"))
+```
+
+## Confidence Interval Reasoning
+
+Confidence-interval reporting became a grading staple in homework feedback, so every KPI here includes half-width, confidence level, and interpretation. We quote the same t-based formula derived in \tech{Week9\_Scripts\_and\_Methods}, making it clear that the mechanosensation project is not inventing new statistics but reusing the classroom framework. The presentation will show how the Arena-style across-replications summary file aligns with the class rubric and how the biological KPIs still respect half-width targets.
+
+```{r ci-analysis-table, echo=FALSE}
+ci_analysis <- data.frame(
+  Metric = c("Turn Rate", "Latency", "Pause Rate"),
+  Formula = c("\\bar{x} \\pm t_{0.975,\,n-1} s/\\sqrt{n}",
+              "Same structure with units seconds",
+              "Same structure with units pauses/min"),
+  Interpretation = c("Highlight relative half-width used for replication decisions",
+                     "Explain biological plausibility window (0.5-5 s)",
+                     "Compare to empirical pause benchmarks (~4/min)")
+)
+
+kable(ci_analysis,
+      caption = "\\tech{Confidence Interval Reporting Aligned with Coursework}",
+      format = "html",
+      booktabs = TRUE,
+      col.names = c("Metric", "CI Expression", "Interpretive Focus")) %>%
+  kable_styling(latex_options = c("striped", "hold_position"),
+                bootstrap_options = c("striped", "hover"))
+```
+
+## Positioning the Proposal
+
+With the class foundations in mind, we can situate the mechanosensation proposal as a natural extension of the semester’s toolkit. The engineered dataset plays the role of carefully characterized input models, the hazard-based simulation mirrors Arena process logic but with biological events, and the DOE plus confidence-interval analysis follows the same verification loop we used on manufacturing case studies. The following slides dive into the pipeline and technical details with the shared vocabulary already established.
+
+## The Pipeline
+
+```{mermaid}
+graph LR
+    A[H5 Files] --> B[Data Engineering]
+    B --> C[Feature Extraction]
+    C --> D[Hazard Model Fitting]
+    D --> E[DOE Simulation]
+    E --> F[KPI Analysis]
+```
+
+## Data Engineering Process
+
+### From Raw Tracking Data to Simulation-Ready Features
+
+The \tech{data engineering pipeline} transforms raw H5 files containing larval trajectory data into simulation-ready features. Input data includes position coordinates (x, y) sampled at \num{20} Hz, head/mid/tail coordinates providing body orientation, and synchronized LED stimulus timing with intensity values.
+
+The processing script `engineer_dataset_from_h5.py` performs five sequential operations. First, it extracts trajectory features including speed, angle, and curvature from position data. Second, it detects behavioral events using \tech{MAGAT segmentation}, identifying runs, turns, and pauses based on speed, curvature, and body bend angle thresholds. Third, it applies \tech{MAGAT segmentation} to classify trajectory segments into discrete behavioral states. Fourth, it generates the \tech{Klein run table}, a standardized \num{18}-column structure organizing run and turn events with derived metrics. Fifth, it extracts \tech{stimulus-locked features} using temporal kernel bases within integration windows relative to stimulus onsets.
+
+```{r data-engineering-table, echo=FALSE}
+data_engineering_steps <- data.frame(
+  Step = c("1. Feature Extraction", "2. Event Detection", "3. MAGAT Segmentation", 
+           "4. Klein Run Table", "5. Stimulus Features"),
+  Process = c("Speed, angle, curvature calculation", 
+              "Turn, pause, reversal identification",
+              "Run segment classification",
+              "18-column standardized structure",
+              "Temporal kernel basis extraction"),
+  Output = c("~50 spatial/temporal features",
+             "Event timestamps and classifications",
+             "Run/turn/pause segments",
+             "Run table with derived metrics",
+             "Stimulus-locked feature vectors")
+)
+
+kable(data_engineering_steps,
+      caption = "\\tech{Data Engineering Pipeline Steps}",
+      format = "html",
+      booktabs = TRUE,
+      col.names = c("Processing Step", "Description", "Output Features")) %>%
+  kable_styling(latex_options = c("striped", "hold_position"), 
+                bootstrap_options = c("striped", "hover"))
+```
+
+The output consists of an engineered CSV dataset containing approximately \num{100}+ features per trajectory, including spatial features (position, speed, acceleration, curvature, body bend angle, wall distance), temporal features (time since last event, stimulus history, integration window features), event classifications (run segments, turn events, pause events, heading reversals, reverse crawling), and stimulus features (LED intensity PWM values, pulse duration, inter-pulse interval, time since onset).
+
+## Key Data Features
+
+### Behavioral Features Extracted
+
+The engineered dataset captures multiple feature categories essential for \tech{hazard model fitting}. \tech{Spatial features} include position coordinates (x, y), speed and acceleration calculated from position derivatives, curvature derived from path geometry, body bend angle computed from head-mid-tail orientation, and distance from arena walls. \tech{Temporal features} track time since last behavioral event, stimulus history vectors, and features extracted within integration windows centered on stimulus onsets.
+
+```{r feature-categories-table, echo=FALSE}
+feature_categories <- data.frame(
+  Category = c("Spatial Features", "Temporal Features", "Event Detection", "Stimulus Features"),
+  Examples = c("Position (x,y), speed, acceleration, curvature, body bend angle, wall distance",
+              "Time since last event, stimulus history, integration window features",
+              "Run segments (MAGAT), turn events, pause events, heading reversals, reverse crawling (Klein)",
+              "LED intensity (PWM), pulse duration, inter-pulse interval, time since onset"),
+  Count = c("~30 features", "~25 features", "~20 features", "~25 features")
+)
+
+kable(feature_categories,
+      caption = "\\tech{Feature Categories in Engineered Dataset}",
+      format = "html",
+      booktabs = TRUE,
+      col.names = c("Feature Category", "Example Features", "Approximate Count")) %>%
+  kable_styling(latex_options = c("striped", "hold_position"),
+                bootstrap_options = c("striped", "hover"))
+```
+
+\tech{Event detection} identifies run segments using \tech{MAGAT segmentation}, turn events marking reorientation transitions, pause events indicating periods of low speed, heading reversals representing discrete \num{180}-degree turns, and reverse crawling detected using the \tech{Klein methodology} analyzing movement-orientation angle relationships. \tech{Stimulus features} encode LED intensity as PWM values (\num{250}, \num{500}, \num{1000}), pulse duration in seconds, inter-pulse interval timing, and time since stimulus onset within integration windows.
+
+## DOE Design
+
+### Factorial Design: 3 Factors × Multiple Levels
+
+The \tech{design of experiments} employs a factorial structure with three factors at multiple levels. \tech{Intensity} varies across three PWM values (\num{250}, \num{500}, \num{1000}) representing threshold, moderate, and high stimulus levels. \tech{Pulse duration} spans five levels (\num{10}s, \num{15}s, \num{20}s, \num{25}s, \num{30}s) covering short to extended stimulus presentations. \tech{Inter-pulse interval} includes three levels (\num{5}s, \num{10}s, \num{20}s) representing rapid, moderate, and spaced stimulus timing.
+
+```{r doe-design-table, echo=FALSE}
+doe_factors <- data.frame(
+  Factor = c("Intensity", "Pulse Duration", "Inter-Pulse Interval"),
+  Levels = c("3 (PWM 250, 500, 1000)", "5 (10s, 15s, 20s, 25s, 30s)", "3 (5s, 10s, 20s)"),
+  Description = c("LED stimulus intensity as PWM percentage",
+                 "Duration of each stimulus pulse",
+                 "Time between consecutive pulse onsets"),
+  Design_Total = c("45 conditions", "45 conditions", "45 conditions")
+)
+
+kable(doe_factors,
+      caption = "\\tech{DOE Factor Structure}",
+      format = "html",
+      booktabs = TRUE,
+      col.names = c("Factor", "Levels", "Description", "Design Contribution")) %>%
+  kable_styling(latex_options = c("striped", "hold_position"),
+                bootstrap_options = c("striped", "hover"))
+```
+
+The complete design encompasses \num{45} conditions total (\num{3} × \num{5} × \num{3}), with \num{30} replications per condition yielding \num{1,350} total simulations. Estimated runtime approximates \num{6} hours based on observed simulation rates of approximately \num{12} seconds per replication. This design structure covers biologically relevant parameter space, enables \tech{main effects} and \tech{interaction analysis} through factorial combinations, and provides statistical power for validation through multiple replications per condition.
+
+## Simulation Process
+
+### How the Simulation Works
+
+The simulation execution follows a four-step process. Step 1 loads fitted models including the reorientation hazard model, pause hazard model, and heading reversal hazard model, along with learned event parameters defining detection thresholds. Step 2 iterates through each DOE condition, setting the stimulus schedule (intensity, duration, interval) and initializing trajectory state (position, speed, angle).
+
+```{r simulation-steps-table, echo=FALSE}
+simulation_steps <- data.frame(
+  Step = c("1. Model Loading", "2. Condition Setup", "3. Time-Step Simulation", "4. KPI Computation"),
+  Process = c("Load 3 fitted hazard models and learned event parameters",
+             "Set stimulus schedule and initialize trajectory state",
+             "Calculate hazard rates, sample event times, update trajectory",
+             "Calculate 7 KPIs per replication, aggregate across 30 replications"),
+  Details = c("Reorientation, pause, reversal models; detection thresholds",
+             "Intensity, duration, interval; initial position, speed, angle",
+             "Hazard rate calculation, event time sampling, state updates",
+             "KPI calculation, confidence intervals, across-replications summary")
+)
+
+kable(simulation_steps,
+      caption = "\\tech{Simulation Execution Process}",
+      format = "html",
+      booktabs = TRUE,
+      col.names = c("Step", "Process", "Technical Details")) %>%
+  kable_styling(latex_options = c("striped", "hold_position"),
+                bootstrap_options = c("striped", "hover"))
+```
+
+Step 3 performs time-step simulation by calculating hazard rates from fitted models at each time point, sampling event times (turns, pauses, reversals) based on hazard probabilities, updating trajectory state (position, speed, angle) according to event occurrences, and recording all behavioral events with timestamps. Step 4 computes KPIs by calculating seven metrics per replication, aggregating across \num{30} replications with statistical summaries, and generating confidence intervals for each KPI using standard error calculations.
+
+## Key Performance Indicators
+
+### 7 Metrics to Validate Model
+
+The simulation computes seven \tech{key performance indicators} per replication to validate model predictions against empirical observations. \tech{Turn rate} measures reorientations per minute, calculated as total turns divided by total time in minutes. \tech{Latency} quantifies time to first turn after stimulus onset, measured within the integration window \num{[-3}s, +\num{8}s] relative to stimulus onset. \tech{Stop fraction} represents the proportion of time spent paused, computed as total stop time divided by total simulation time.
+
+```{r kpi-definitions-table, echo=FALSE}
+kpi_definitions <- data.frame(
+  KPI = c("Turn Rate", "Latency", "Stop Fraction", "Pause Rate", 
+          "Reversal Rate", "Tortuosity", "Mean Spine Curve Energy"),
+  Units = c("turns/min", "seconds", "dimensionless", "pauses/min",
+           "reversals/min", "dimensionless", "dimensionless"),
+  Calculation = c("total_turns / (total_time / 60)",
+                 "min(turn_times) - stimulus_onset (within integration window)",
+                 "total_stop_time / total_time",
+                 "total_pauses / (total_time / 60)",
+                 "total_reversals / (total_time / 60)",
+                 "euclidean_distance / path_length",
+                 "mean(spine_curve_energy)")
+)
+
+kable(kpi_definitions,
+      caption = "\\tech{Key Performance Indicators (KPIs)}",
+      format = "html",
+      booktabs = TRUE,
+      col.names = c("KPI Name", "Units", "Calculation Method")) %>%
+  kable_styling(latex_options = c("striped", "hold_position"),
+                bootstrap_options = c("striped", "hover"))
+```
+
+\tech{Pause rate} counts pauses per minute using speed-based detection with learned thresholds. \tech{Reversal rate} measures heading reversals per minute, representing discrete \num{180}-degree turn events distinct from reverse crawling. \tech{Tortuosity} quantifies path efficiency as the ratio of euclidean distance to path length, ranging from \num{0} (highly tortuous) to \num{1} (straight path). \tech{Mean spine curve energy} captures body bend energy averaged over the trajectory. These KPIs capture different aspects of behavior, remain comparable to empirical observations, are computable from trajectory data, and hold biological meaning for larval navigation and stimulus response.
+
+## Event-Hazard Models
+
+### How We Predict Behavioral Events
+
+The \tech{hazard function} models the instantaneous probability of behavioral events occurring at time $t$ conditioned on feature vector $\mathbf{x}$:
+
+$$h(t | \mathbf{x}) = h_0(t) \exp(\beta_1 x_1 + \beta_2 x_2 + \ldots)$$
+
+where $h_0(t)$ represents the baseline hazard and the exponential term captures feature effects. Model features include temporal kernel basis functions (raised cosine) encoding stimulus history, stimulus intensity effects scaling with PWM values, contextual features (speed, orientation, wall proximity) affecting event probabilities, and interaction terms capturing nonlinear relationships.
+
+```{r model-features-table, echo=FALSE}
+model_features <- data.frame(
+  Feature_Type = c("Temporal Kernel", "Stimulus Intensity", "Contextual Features", "Interactions"),
+  Description = c("Raised cosine basis functions over integration window",
+                 "PWM intensity values (250, 500, 1000)",
+                 "Speed, orientation, wall proximity",
+                 "Nonlinear feature combinations"),
+  Model_Type = c("Basis expansion", "Linear coefficient", "Linear coefficients", "Product terms")
+)
+
+kable(model_features,
+      caption = "\\tech{Hazard Model Feature Structure}",
+      format = "html",
+      booktabs = TRUE,
+      col.names = c("Feature Type", "Description", "Model Representation")) %>%
+  kable_styling(latex_options = c("striped", "hold_position"),
+                bootstrap_options = c("striped", "hover"))
+```
+
+Model fitting employs \tech{generalized linear models} (Poisson for count events, logistic for binary events) with \tech{cross-validation} using leave-one-larva-out methodology and \tech{L2 regularization} with $\lambda = 0.1$ to prevent overfitting. The output provides coefficients for each feature quantifying effect sizes, time-varying hazard rates enabling event probability calculation at any time point, and event probability distributions for stochastic event sampling during simulation.
+
+## Parameter Learning
+
+### Calibrating Detection Thresholds
+
+Event detection requires threshold parameters that cannot be directly observed but must be inferred from empirical data distributions. \tech{Pause detection} requires a speed threshold defining when movement ceases and a minimum duration ensuring pauses represent meaningful behavioral states rather than transient speed fluctuations. \tech{Reversal detection} requires an angle threshold distinguishing discrete heading reversals from gradual turns. \tech{MAGAT segmentation} requires curvature and body bend thresholds for run/turn classification.
+
+```{r parameter-learning-table, echo=FALSE}
+parameter_learning <- data.frame(
+  Parameter = c("Pause Speed Threshold", "Pause Min Duration", "Reversal Angle Threshold",
+               "MAGAT Curvature Threshold", "MAGAT Body Bend Threshold"),
+  Method = c("Speed distribution percentiles", "Empirical pause duration analysis",
+            "Heading change distribution", "Curvature distribution percentiles",
+            "Body bend angle distribution percentiles"),
+  Learned_Value = c("0.003 mm/s", "0.2 seconds", "45-70 degrees",
+                   "Data-driven percentile", "Data-driven percentile"),
+  Calibration = c("Match empirical pause rate (~4 pauses/min)",
+                 "Filter transient pauses", "Distinguish reversals from turns",
+                 "Optimize run detection", "Optimize run detection")
+)
+
+kable(parameter_learning,
+      caption = "\\tech{Parameter Learning Methodology}",
+      format = "html",
+      booktabs = TRUE,
+      col.names = c("Parameter", "Learning Method", "Learned Value", "Calibration Target")) %>%
+  kable_styling(latex_options = c("striped", "hold_position"),
+                bootstrap_options = c("striped", "hover"))
+```
+
+The parameter learning solution analyzes empirical data distributions to set thresholds. For pause detection, the system analyzes speed distributions, sets thresholds based on percentiles (typically \num{10}th-\num{15}th percentile), and calibrates to match empirical pause rates (approximately \num{4} pauses per minute). For reversal detection, it analyzes heading change distributions and sets angle thresholds (typically \num{45}-\num{70} degrees) to distinguish reversals from gradual turns. For MAGAT segmentation, it analyzes curvature and body bend angle distributions, sets thresholds using percentile-based methods, and optimizes to ensure runs are correctly detected without excessive fragmentation.
+
+## Validation Results
+
+### Testing Before Full DOE
+
+Pre-DOE validation employed a single condition test simulating \num{30} replications to verify KPI calculations and compare values against empirical ranges. The test verified biologically plausible values across all metrics, ensuring parameter learning produced consistent detection, and confirmed models capture stimulus-response dynamics.
+
+```{r validation-results-table, echo=FALSE}
+validation_results <- data.frame(
+  KPI = c("Turn Rate", "Latency", "Pause Rate", "Stop Fraction"),
+  Empirical_Range = c("0.4-11 turns/min", "0.5-5 seconds", "1-10 pauses/min", "0-1"),
+  Validation_Status = c("Within range", "Within range", "Within range", "Within range"),
+  Notes = c("Validated against empirical turn distributions",
+           "Measured relative to stimulus onset in integration window",
+           "Speed-based detection matches empirical pause patterns",
+           "Proportion of time below speed threshold")
+)
+
+kable(validation_results,
+      caption = "\\tech{Pre-DOE Validation Results}",
+      format = "html",
+      booktabs = TRUE,
+      col.names = c("KPI", "Empirical Range", "Validation Status", "Notes")) %>%
+  kable_styling(latex_options = c("striped", "hold_position"),
+                bootstrap_options = c("striped", "hover"))
+```
+
+Validation results demonstrate turn rates ranging from \num{0.4} to \num{11} turns per minute, matching empirical distributions. Latency values fall between \num{0.5} and \num{5} seconds when measured relative to stimulus onset within the integration window, confirming correct temporal alignment. Pause rates range from \num{1} to \num{10} pauses per minute using speed-based detection matching empirical pause patterns. Stop fraction values span \num{0} to \num{1}, representing the proportion of time spent below the speed threshold. All values fall within expected biological ranges, parameter learning ensures consistency with empirical detection methods, and models successfully capture stimulus-response dynamics observed in real larval behavior.
+
+## Simulation Execution
+
+### Running the Full DOE
+
+The full DOE simulation executes through a structured process. The system loads three fitted hazard models (reorientation, pause, heading reversal) and learned event parameters defining detection thresholds. It iterates through \num{45} conditions, executing \num{30} replications per condition with checkpointing after each condition completion to enable resume capability.
+
+```{r execution-features-table, echo=FALSE}
+execution_features <- data.frame(
+  Feature = c("Checkpointing", "Progress Monitoring", "Error Handling", "Resume Capability"),
+  Description = c("Save progress after each condition",
+                 "Real-time progress display with replication counts",
+                 "Continue on individual errors with max threshold",
+                 "Restart from last checkpoint if interrupted"),
+  Implementation = c("Checkpoint CSV updated after each condition",
+                     "Monitor script updates every 2 seconds",
+                     "Max 10 errors per condition, continue otherwise",
+                     "Checkpoint file contains completed replications")
+)
+
+kable(execution_features,
+      caption = "\\tech{Simulation Execution Features}",
+      format = "html",
+      booktabs = TRUE,
+      col.names = c("Feature", "Description", "Implementation")) %>%
+  kable_styling(latex_options = c("striped", "hold_position"),
+                bootstrap_options = c("striped", "hover"))
+```
+
+Progress monitoring provides real-time progress display showing total replications completed, conditions completed out of \num{45}, progress percentage calculated from total replications (\num{1,350} total), remaining conditions count, and estimated time remaining based on observed replication rates. Error handling continues simulation on individual replication failures, tracks error counts per condition, and stops only if error threshold (\num{10} errors) is exceeded. Resume capability enables restarting from the last checkpoint if simulation is interrupted, loads completed replications from checkpoint file, and continues from the next incomplete condition.
+
+## Expected Results
+
+### Analysis Pipeline
+
+After simulation completion, the analysis pipeline performs three major operations. First, result aggregation exports data to Arena format, generates across-replications summary with mean, standard deviation, and confidence intervals for each KPI by condition, and creates formatted CSV files compatible with Arena analysis tools.
+
+```{r analysis-pipeline-table, echo=FALSE}
+analysis_pipeline <- data.frame(
+  Step = c("1. Aggregate Results", "2. Main Effects Analysis", "3. Visualization"),
+  Process = c("Export to Arena format, generate summary statistics",
+             "ANOVA for each KPI, factor importance ranking",
+             "Main effects plots, interaction plots, distributions"),
+  Output = c("AcrossReplicationsSummary.csv with CIs",
+            "ANOVA results JSON, factor coefficients",
+            "PNG plots for main effects and interactions")
+)
+
+kable(analysis_pipeline,
+      caption = "\\tech{Post-Simulation Analysis Pipeline}",
+      format = "html",
+      booktabs = TRUE,
+      col.names = c("Analysis Step", "Process", "Output Files")) %>%
+  kable_styling(latex_options = c("striped", "hold_position"),
+                bootstrap_options = c("striped", "hover"))
+```
+
+Second, main effects analysis performs ANOVA for each KPI to test factor significance, ranks factors by importance based on effect sizes, and analyzes interaction effects between factor pairs. Third, visualization generates main effects plots showing KPI responses to each factor level, creates interaction plots displaying factor combination effects, and produces distribution comparisons across conditions. Simulation status indicates the full DOE is currently running with an estimated completion time of approximately \num{4} to \num{5} hours based on observed replication rates.
+
+## Implementation Details
+
+### Technical Stack
+
+The implementation employs Python 3 for data processing and simulation execution, R and Quarto for analysis and reporting, Pandas and NumPy for data manipulation, and Scikit-learn for model fitting. The data engineering script `engineer_dataset_from_h5.py` extracts features from H5 files and generates the engineered dataset. The model fitting script `fit_hazard_models.py` fits hazard models with cross-validation and regularization.
+
+```{r implementation-stack-table, echo=FALSE}
+implementation_stack <- data.frame(
+  Component = c("Data Engineering", "Model Fitting", "Simulation", "Analysis"),
+  Script = c("engineer_dataset_from_h5.py", "fit_hazard_models.py", 
+            "simulate_trajectories.py", "analyze_doe_results.py"),
+  Function = c("Feature extraction, event detection, Klein table generation",
+              "Hazard model fitting with CV, coefficient estimation",
+              "DOE simulation with checkpointing, KPI computation",
+              "Arena export, ANOVA, visualization generation"),
+  Output = c("Engineered CSV dataset", "Fitted model JSON files",
+            "Simulation results CSV, checkpoint files",
+            "Arena CSVs, ANOVA JSON, plot PNGs")
+)
+
+kable(implementation_stack,
+      caption = "\\tech{Implementation Scripts and Functions}",
+      format = "html",
+      booktabs = TRUE,
+      col.names = c("Component", "Script", "Primary Function", "Output Files")) %>%
+  kable_styling(latex_options = c("striped", "hold_position"),
+                bootstrap_options = c("striped", "hover"))
+```
+
+The simulation script `simulate_trajectories.py` executes DOE simulation with checkpointing and error recovery, computes KPIs for each replication, and generates results files. The analysis script `analyze_doe_results.py` exports results to Arena format, performs ANOVA analysis, and generates visualization plots. Output format includes Arena-style CSV files with across-replications summaries, summary statistics with confidence intervals for each KPI, formatted tables for reports, and visualization plots in PNG and PDF formats.
+
+## Next Steps
+
+### After Simulation Completes
+
+Immediate steps following simulation completion include verifying the all_results.csv structure contains all expected columns, confirming all seven KPIs are present without approach_rate (removed as inapplicable to omnidirectional stimuli), validating biologically plausible value ranges, and checking the expected number of rows (\num{1,350} total: \num{45} conditions × \num{30} replications).
+
+```{r next-steps-table, echo=FALSE}
+next_steps <- data.frame(
+  Phase = c("Verification", "Analysis", "Presentation", "Report"),
+  Actions = c("Verify results CSV structure and KPI columns",
+             "Run analysis pipeline, generate plots and ANOVA",
+             "Update slides with actual results and visualizations",
+             "Generate final report with statistical interpretation"),
+  Deliverables = c("Validated results file",
+                  "Analysis outputs (CSVs, plots, ANOVA JSON)",
+                  "Updated presentation with results",
+                  "TermProject_Report.qmd with complete analysis")
+)
+
+kable(next_steps,
+      caption = "\\tech{Post-Simulation Workflow}",
+      format = "html",
+      booktabs = TRUE,
+      col.names = c("Phase", "Actions", "Deliverables")) %>%
+  kable_styling(latex_options = c("striped", "hold_position"),
+                bootstrap_options = c("striped", "hover"))
+```
+
+Analysis activities involve running the complete analysis pipeline using `analyze_doe_results.py`, generating main effects plots showing factor importance, creating interaction plots revealing factor combinations, and reviewing KPI distributions for biological interpretation. Presentation updates will incorporate actual results into slides, add main effects visualizations with confidence intervals, include interaction plots demonstrating factor relationships, and discuss biological implications of the findings. Report generation will update TermProject_Report.qmd with analysis results, ensure all KPI references match the seven valid metrics, and re-render the report with complete statistical interpretation.
+
+## Questions?
+
+### Contact & Resources
+
+The project repository contains all code and data in the `ecs630/labs/termprojectproposal/` directory, with documentation in the `docs/` subdirectory and simulation results in the `output/` directory. Key files include `TermProject_Proposal.qmd` providing the full project proposal, `POST_DOE_CHECKLIST.md` containing the analysis workflow, and `Simulation_Presentation.qmd` representing this presentation.
+
+```{r resources-table, echo=FALSE}
+resources <- data.frame(
+  Resource = c("Project Repository", "Documentation", "Results", "Monitoring"),
+  Location = c("ecs630/labs/termprojectproposal/", "docs/ directory", 
+              "output/ directory", "scripts/monitor_doe.py"),
+  Contents = c("All code, data, and configuration files",
+              "Methodology documentation and checklists",
+              "Simulation results, analysis outputs, plots",
+              "Real-time progress monitoring script")
+)
+
+kable(resources,
+      caption = "\\tech{Project Resources and Locations}",
+      format = "html",
+      booktabs = TRUE,
+      col.names = c("Resource Type", "Location", "Contents")) %>%
+  kable_styling(latex_options = c("striped", "hold_position"),
+                bootstrap_options = c("striped", "hover"))
+```
+
+Simulation status can be checked by examining `output/simulation_results/doe_run.log` for execution progress, running `python3 scripts/monitor_doe.py` for real-time monitoring display, and reviewing checkpoint files to verify completed replications. The monitoring script provides total replications completed, conditions completed out of \num{45}, progress percentage, remaining conditions, estimated time remaining, and log file size, updating automatically every \num{2} seconds.

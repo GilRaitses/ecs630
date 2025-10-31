@@ -1,0 +1,591 @@
+---
+title: "Lab 02: OAPM3 Manufacturing System Analysis"
+subtitle: "Time-Varying Arrivals and Multi-Worker Scheduling in Auto Part Manufacturing"
+author: "Gil Raitses"
+date: today
+abstract: |
+  \tech{Manufacturing systems} with \tech{time-varying demand} and complex \tech{workforce scheduling} present challenges for \tech{capacity planning} and \tech{bottleneck management}. This analysis examines an \tech{auto part manufacturing system} with hourly \tech{arrival patterns} ranging from \num{10} to \num{37} orders per hour and a three-worker team operating under realistic \tech{shift constraints}. The system processed \num{62} orders over a \num{9}-hour workday, achieving \num{34}\% \tech{resource utilization} across workers while orders spent \num{96}\% of system time waiting in queues. The \tech{Order Review stage} functions as the primary \tech{bottleneck} with average queue lengths of \num{48.9} orders despite multiple worker availability, showing how \tech{workforce scheduling constraints} can dominate \tech{system performance} even with adequate total capacity. \tech{Computer resources} remained underutilized at \num{8.6}\%, indicating that worker availability rather than equipment capacity drives \tech{manufacturing throughput} in \tech{labor-intensive operations}.
+format:
+  pdf:
+    documentclass: article
+    geometry:
+      - margin=1in
+    fig-dpi: 300
+    toc: false
+    number-sections: true
+    pdf-engine: lualatex
+header-includes: |
+  \usepackage{fontspec}
+  \setmainfont{Avenir Next}[
+    UprightFont = *-UltraLight,
+    BoldFont = *-Medium,
+    ItalicFont = *-UltraLightItalic,
+    BoldItalicFont = *-MediumItalic
+  ]
+  \newfontfamily\headingfont{Didot}
+  \newfontfamily\numfont{Avenir Next Regular}
+  \newfontfamily\techfont{Avenir Next Medium}
+  \usepackage{xcolor}
+  \newcommand{\num}[1]{{\numfont\textcolor[gray]{0.3}{#1}}}
+  \newcommand{\tech}[1]{{\techfont\textcolor[RGB]{105,100,100}{#1}}}
+  \usepackage{sectsty}
+  \allsectionsfont{\headingfont}
+  \subsectionfont{\headingfont\itshape\color[RGB]{90,60,60}}
+  \subsubsectionfont{\headingfont\itshape\color[RGB]{90,60,60}}
+  \renewcommand{\thesubsection}{\hspace{-1em}}
+  \renewcommand{\thesubsubsection}{\hspace{-1em}}
+  \usepackage{tikz}
+  \usetikzlibrary{shapes.geometric, arrows.meta, positioning, shadows}
+  \usepackage{float}
+  \usepackage{placeins}
+  \usepackage{needspace}
+  \usepackage{etoolbox}
+  \usepackage{caption}
+  \makeatletter
+  \preto\section{\needspace{6\baselineskip}}
+  \preto\subsection{\needspace{6\baselineskip}}
+  \preto\subsubsection{\needspace{6\baselineskip}}
+  \makeatother
+  \captionsetup{margin=0.5in, font=small}
+  \setlength{\floatsep}{1.5em}
+  \setlength{\textfloatsep}{1.5em}
+  \newenvironment{insetfigure}{\begin{adjustwidth}{0.5in}{0.5in}}{\end{adjustwidth}}
+  \usepackage{changepage}
+  \tikzstyle{process} = [regular polygon, regular polygon sides=6, minimum width=3.5cm, minimum height=2cm, text centered, text width=2.5cm, draw=black!80, fill=gray!20, line width=1.2pt, drop shadow]
+  \tikzstyle{arrow} = [ultra thick,->,>=stealth, draw=black!70]
+execute:
+  python: /Users/gilraitses/ecs630/labs/lab01/venv/bin/python3
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 10,
+  fig.height = 6,
+  dpi = 300
+)
+
+# Load required libraries
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(knitr)
+library(kableExtra)
+library(tidyr)
+library(cowplot)
+library(grid)
+library(showtext)
+
+# Function to create circle coordinates
+make_circle <- function(center_x, center_y, radius, npoints = 100) {
+  angles <- seq(0, 2 * pi, length.out = npoints)
+  data.frame(
+    x = center_x + radius * cos(angles),
+    y = center_y + radius * sin(angles)
+  )
+}
+
+# Add EB Garamond font
+font_add(family = "EB Garamond", 
+         regular = "~/Library/Fonts/EBGaramond12-Regular.otf")
+showtext_auto()
+```
+
+# Introduction
+
+This laboratory exercise analyzes \tech{Model OAPM3}, a complex auto part manufacturing system featuring \tech{time-varying arrival patterns}, \tech{multi-worker scheduling}, and \tech{shared resource constraints}. The system models realistic manufacturing conditions with hourly demand fluctuations ranging from \num{10} to \num{37} orders per hour, three workers operating under different shift patterns, and computer resource sharing between CAD inspection and CAM file generation processes. The analysis examines how \tech{workforce scheduling constraints} and \tech{time-varying demand} affect system performance, bottleneck formation, and resource utilization in manufacturing environments.
+
+# Model OAPM3: Auto Part Manufacturing System
+
+## Model Description
+
+\tech{Model OAPM3} simulates a \tech{five-stage auto part manufacturing process} where orders arrive according to realistic hourly patterns, undergo review by available machinists, then proceed through computer-based \tech{CAD inspection} and \tech{CAM file generation} before final printing. The workforce consists of \tech{Rich} (part-time, \num{10} AM - \num{2} PM), \tech{Ann} (full-time with break \num{10:30} - \num{11:30} AM), and \tech{Dina} (backup, always available). The system utilizes \num{2} \tech{shared computers} for both \tech{CAD inspection} and \tech{CAM generation} processes, creating potential \tech{resource contention} during \tech{peak demand periods}.
+
+```{r fig-oapm3-flowchart, fig.cap="\\textbf{\\tech{Model OAPM3} System Flow.} \\tech{Multi-stage manufacturing system} with \\tech{time-varying arrivals} (\\num{10}-\\num{37} orders/hour), \\tech{multi-worker scheduling} (Rich part-time, Ann with break, Dina backup), and \\tech{shared computer resources} for \\tech{CAD inspection} and \\tech{CAM generation}. The system shows \\tech{workforce constraints} as the primary bottleneck rather than equipment limitations.", fig.width=10, fig.height=2.2, fig.pos='H'}
+library(DiagrammeR)
+
+# Create elegant flowchart with Cinnamoroll theme
+grViz("
+digraph flowchart {
+  graph [layout = dot, rankdir = LR, fontname = 'Avenir Next', 
+         bgcolor = 'transparent', splines = polyline, nodesep = 0.3, ranksep = 0.5]
+  
+  node [shape = box, style = 'filled,rounded', fontname = 'Avenir Next Medium',
+        fontsize = 11, height = 0.6, width = 1.4, penwidth = 1.5, margin = '0.1,0.08']
+  
+  edge [color = '#8AB4D3', penwidth = 2, arrowsize = 0.8]
+  
+  A [label = 'Orders Arrive\\nSchedule-Based', fillcolor = '#B4D7EC', color = '#8AB4D3', fontcolor = '#2C4A5F']
+  B [label = 'Order Review\\nMulti-Worker', fillcolor = '#D4E8F5', color = '#A8C8E0', fontcolor = '#2C4A5F']
+  C [label = 'CAD Inspection\\nComputer 1 or 2', fillcolor = '#E8D7F1', color = '#C8B5DC', fontcolor = '#4A3F5F']
+  D [label = 'CAM Generation\\nComputer 1 or 2', fillcolor = '#F5D4D8', color = '#E0B8C0', fontcolor = '#5F3F45']
+  E [label = 'Print Summary\\nNo Resource', fillcolor = '#FFE5D9', color = '#E8C8BC', fontcolor = '#5F4A3F']
+  F [label = 'Orders Complete\\nDispose', fillcolor = '#FFF9F3', color = '#E8D8CC', fontcolor = '#5F4A3F']
+  
+  A -> B -> C -> D -> E -> F
+}
+")
+```
+
+The \tech{arrival pattern} follows realistic \tech{manufacturing demand} with \tech{peak periods} during lunch hours (\num{11} AM - \num{1} PM) reaching \num{36}-\num{37} orders per hour, while early morning and mid-afternoon periods show reduced activity (\num{10}-\num{15} orders per hour). \tech{Order review} requires \num{2}-\num{4} minutes with \tech{triangular distribution} (mode \num{3} minutes), \tech{CAD inspection} takes \num{30}-\num{60} seconds uniformly, \tech{CAM generation} requires exactly \num{45} seconds, and final \tech{printing} adds \num{45} seconds of \tech{processing time}.
+
+## Results
+
+```{r oapm3-load-data, include=FALSE}
+# Read CSV files for OAPM3
+oapm3_discrete <- read_csv("OAPM3_RaitsesGil_rpt_csvs/DiscreteTimeStatsByRep.csv", 
+                           skip = 0, show_col_types = FALSE)
+oapm3_continuous <- read_csv("OAPM3_RaitsesGil_rpt_csvs/ContinuousTimeStatsByRep.csv", 
+                             skip = 0, show_col_types = FALSE)
+oapm3_counter <- read_csv("OAPM3_RaitsesGil_rpt_csvs/CounterStatsByRep.csv", 
+                          skip = 0, show_col_types = FALSE)
+```
+
+### Model OAPM3 Key Performance Statistics
+
+The \tech{manufacturing system} processed \num{62} orders during the \num{9}-hour workday (\num{540} minutes), achieving a \tech{throughput rate} of \num{6.9} orders per hour against a theoretical maximum of \num{23.8} orders per hour based on \tech{arrival schedule} totals. Orders experienced an average \tech{total time} of \num{130.22} minutes in the system, with \num{5.21} minutes (\num{4.0}\%) spent in \tech{value-added processing} and \num{125.01} minutes (\num{96.0}\%) waiting in queues. The system maintained high \tech{work-in-progress} levels averaging \num{49.5} orders with peaks of \num{106} orders, with congestion at the \tech{Order Review stage} where the average \tech{queue length} was \num{48.9} orders.
+
+```{r oapm3-summary-table, echo=FALSE}
+# Extract key statistics from OAPM3 data
+oapm3_summary <- data.frame(
+  Metric = c("Orders Processed", 
+             "Average Total Time (min)", 
+             "Average VA Time (min)",
+             "Average Wait Time (min)",
+             "Wait Time Percentage",
+             "Average WIP",
+             "Max WIP", 
+             "Order Review Queue Avg",
+             "Order Review Queue Max",
+             "Throughput Rate (orders/hr)"),
+  Value = c("62", "130.22", "5.21", "125.01", "96.0%", "49.5", "106", "48.9", "106", "6.9")
+)
+
+kable(oapm3_summary, caption = "\\tech{Model OAPM3} Key Performance Statistics", 
+      format = "latex", booktabs = TRUE, col.names = c("Performance Metric", "Value")) %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
+```
+
+### Resource Utilization Analysis
+
+All three machinists achieved identical \num{34.0}\% \tech{utilization rates}, indicating \tech{balanced workload distribution} despite different \tech{shift patterns}. \tech{Rich's} part-time schedule (\num{10} AM - \num{2} PM), \tech{Ann's} full-time schedule with break, and \tech{Dina's} continuous availability resulted in equivalent utilization, suggesting that the \tech{workforce scheduling} provides adequate coverage during \tech{peak demand periods}. \tech{Computer resources} showed low utilization at \num{8.6}\% for the \tech{shared pool} of \num{2} units, confirming that \tech{equipment capacity} is not the constraining factor in this system.
+
+```{r oapm3-resource-table, echo=FALSE}
+# Extract resource utilization data
+resource_data <- data.frame(
+  Resource = c("Rich (Part-time)", "Ann (Full-time)", "Dina (Backup)", "Computer Pool"),
+  Type = c("Based on Schedule", "Based on Schedule", "Fixed Capacity", "Fixed Capacity"),
+  Capacity = c("Schedule-based", "Schedule-based", "1", "2"),
+  Utilization = c("34.0%", "34.0%", "34.0%", "8.6%"),
+  Bottleneck_Status = c("Constraint", "Constraint", "Constraint", "Adequate")
+)
+
+kable(resource_data, caption = "\\tech{Resource Utilization Analysis} - OAPM3", 
+      format = "latex", booktabs = TRUE, 
+      col.names = c("Resource", "Type", "Capacity", "Utilization (%)", "Status")) %>%
+  kable_styling(latex_options = c("striped", "hold_position")) %>%
+  column_spec(5, width = "2cm")
+```
+
+### System Performance Analysis
+
+The system exhibits characteristics of a \tech{workforce-constrained manufacturing environment} where \tech{labor availability} drives performance rather than \tech{equipment capacity}. The \num{96.0}\% \tech{wait time percentage} indicates high queuing at the \tech{Order Review stage}, with orders spending an average of \num{125.01} minutes waiting compared to \num{5.21} minutes in \tech{value-added processing}. Peak \tech{work-in-progress} levels of \num{106} orders show the system's inability to process demand during \tech{high-arrival periods}, particularly during the \num{11} AM - \num{1} PM peak when \num{36}-\num{37} orders arrive per hour.
+
+```{r oapm3-plots, include=FALSE}
+# Create OAPM3 visualizations
+time_data_oapm3 <- data.frame(
+  Component = c("VA Time", "Wait Time"),
+  Average = c(5.21, 125.01),
+  Percentage = c(4.0, 96.0)
+)
+
+p_time_breakdown_oapm3 <- ggplot(time_data_oapm3, aes(x = Component, y = Average, fill = Average)) +
+  geom_bar(stat = "identity", width = 0.6) +
+  scale_fill_gradient2(low = "#B4D7EC", mid = "#E8D7F1", high = "#F5D4D8",
+                      midpoint = median(time_data_oapm3$Average)) +
+  geom_text(aes(label = sprintf("%.1f min\n(%.1f%%)", Average, Percentage)), 
+            vjust = -0.5, size = 4.5, fontface = "bold") +
+  labs(
+    x = "Time Component",
+    y = "Average Time (minutes)",
+    fill = "Time (min)"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.title = element_text(size = 13, family = "EB Garamond"),
+    axis.text.y = element_text(size = 14, family = "EB Garamond"),
+    axis.text.x = element_text(size = 12, family = "EB Garamond"),
+    legend.position = "right",
+    legend.text = element_text(size = 11, family = "EB Garamond"),
+    legend.title = element_text(size = 11, family = "EB Garamond"),
+    panel.background = element_rect(fill = NA, color = NA),
+    plot.background  = element_rect(fill = NA, color = NA),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    plot.margin = margin(t = 20, r = 10, b = 30, l = 10, unit = "pt")
+  ) +
+  coord_cartesian(ylim = c(0, 140), clip = "off")
+
+# Resource utilization and queue analysis
+resource_analysis <- data.frame(
+  Resource = c("Rich", "Ann", "Dina", "Computer"),
+  Utilization = c(34.0, 34.0, 34.0, 8.6),
+  Queue_Impact = c("High", "High", "High", "None"),
+  Constraint_Level = c(3, 3, 3, 1)
+)
+
+p_resource_analysis <- ggplot(resource_analysis, aes(x = Resource, y = Utilization, fill = Constraint_Level)) +
+  geom_bar(stat = "identity", width = 0.7) +
+  scale_fill_gradient2(low = "#B4D7EC", mid = "#E8D7F1", high = "#F5D4D8",
+                      midpoint = 2, limits = c(1, 3)) +
+  geom_text(aes(label = paste0(round(Utilization, 1), "%")), 
+            vjust = -0.5, size = 4.5, fontface = "bold") +
+  labs(
+    x = "Resource Type",
+    y = "Utilization (%)",
+    fill = "Constraint\nLevel"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.title = element_text(size = 13, family = "EB Garamond"),
+    axis.text.y = element_text(size = 14, family = "EB Garamond"),
+    axis.text.x = element_text(size = 12, family = "EB Garamond"),
+    legend.position = "right",
+    legend.text = element_text(size = 11, family = "EB Garamond"),
+    legend.title = element_text(size = 11, family = "EB Garamond"),
+    panel.background = element_rect(fill = NA, color = NA),
+    plot.background  = element_rect(fill = NA, color = NA),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    plot.margin = margin(t = 20, r = 10, b = 30, l = 10, unit = "pt")
+  ) +
+  coord_cartesian(ylim = c(0, 40), clip = "off")
+
+# Arrival pattern analysis
+arrival_pattern <- data.frame(
+  Hour = c("8-9", "9-10", "10-11", "11-12", "12-1", "1-2", "2-3", "3-4", "4-5"),
+  Orders_Per_Hour = c(10, 15, 25, 37, 36, 14, 11, 21, 24),
+  Period = c("Low", "Low", "Medium", "Peak", "Peak", "Low", "Low", "Medium", "Medium")
+)
+
+p_arrival_pattern <- ggplot(arrival_pattern, aes(x = Hour, y = Orders_Per_Hour, fill = Period)) +
+  geom_bar(stat = "identity", width = 0.8) +
+  scale_fill_manual(values = c("Low" = "#B4D7EC", "Medium" = "#E8D7F1", "Peak" = "#F5D4D8")) +
+  geom_text(aes(label = Orders_Per_Hour), vjust = -0.5, size = 4, fontface = "bold") +
+  labs(
+    x = "Time Period",
+    y = "Orders per Hour",
+    fill = "Demand\nLevel"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.title = element_text(size = 13, family = "EB Garamond"),
+    axis.text.y = element_text(size = 14, family = "EB Garamond"),
+    axis.text.x = element_text(size = 10, family = "EB Garamond", angle = 45, hjust = 1),
+    legend.position = "right",
+    legend.text = element_text(size = 11, family = "EB Garamond"),
+    legend.title = element_text(size = 11, family = "EB Garamond"),
+    panel.background = element_rect(fill = NA, color = NA),
+    plot.background  = element_rect(fill = NA, color = NA),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    plot.margin = margin(t = 20, r = 10, b = 30, l = 10, unit = "pt")
+  ) +
+  coord_cartesian(ylim = c(0, 42), clip = "off")
+```
+
+The \tech{simulation} ran for \num{540} minutes representing a complete \num{9}-hour workday. \tech{Order review times} follow \tech{triangular distribution} (\num{2}-\num{4} minutes, mode \num{3}), \tech{CAD inspection} uses \tech{uniform distribution} (\num{0.5}-\num{1.0} minutes), \tech{CAM generation} requires constant \num{0.75} minutes, and \tech{printing} adds constant \num{0.75} minutes. The \num{2} \tech{shared computers} create potential bottlenecks during simultaneous \tech{CAD} and \tech{CAM operations}, though analysis reveals \tech{workforce constraints} dominate \tech{system performance}.
+
+## Results
+
+### Model OAPM3 Performance Analysis
+
+The \tech{manufacturing system} shows \tech{workforce-limited performance} with \num{62} orders processed over \num{540} minutes, yielding \num{29.0}\% of \tech{theoretical throughput capacity}. The average \tech{total time} of \num{130.22} minutes per order consists of \num{5.21} minutes \tech{value-added processing} (\num{4.0}\%) and \num{125.01} minutes waiting (\num{96.0}\%), with high \tech{queuing congestion}. \tech{Work-in-progress} averaged \num{49.5} orders with maximum levels of \num{106} orders during \tech{peak arrival periods}, showing the system's inability to match demand with available \tech{workforce capacity}.
+
+```{r fig-oapm3-performance, fig.cap="\\textbf{\\tech{Model OAPM3} Performance Characteristics.} \\textbf{(a)} Time allocation shows orders spending \\num{96.0} percent waiting (\\num{125.01} min) versus \\num{4.0} percent in \\tech{value-added processing} (\\num{5.21} min), indicating a \tech{workforce bottleneck}. \\textbf{(b)} \\tech{Resource utilization profile} shows \\tech{balanced worker utilization} (\\num{34.0} percent each) despite different schedules, while \\tech{computer underutilization} (\\num{8.6} percent) indicates that \\tech{labor availability constrains system performance}.", fig.width=8, fig.height=4.2, fig.pos='H'}
+# Combine plots with Cinnamoroll theme colors
+bg_color <- "#FFF9F3"
+border_color <- "#B4D7EC"
+
+combined_oapm3_grid <- cowplot::plot_grid(
+  p_time_breakdown_oapm3 + ggtitle(NULL),
+  p_resource_analysis + ggtitle(NULL),
+  labels = c("a", "b"),
+  label_size = 14,
+  ncol = 2,
+  rel_widths = c(1, 1),
+  align = "hv"
+)
+
+boxed_combined_oapm3 <- cowplot::ggdraw() +
+  theme(plot.background = element_rect(fill = bg_color, color = border_color, linewidth = 1)) +
+  cowplot::draw_plot(combined_oapm3_grid, x = 0.04, y = 0.04, width = 0.92, height = 0.92) +
+  cowplot::draw_grob(grid::rectGrob(gp = grid::gpar(fill = NA, col = border_color, lwd = 1.2)),
+                     x = 0, y = 0, width = 1, height = 1)
+
+print(boxed_combined_oapm3)
+```
+
+### Workforce Scheduling Impact
+
+\tech{Resource utilization analysis} shows uniform \num{34.0}\% utilization across all three machinists despite significantly different \tech{availability schedules}. \tech{Rich's} part-time availability (\num{4} hours), \tech{Ann's} full-time schedule with break (\num{8} hours effective), and \tech{Dina's} continuous availability (\num{9} hours) all resulted in identical \tech{utilization rates}, suggesting that \tech{demand exceeds available workforce capacity} regardless of individual \tech{worker schedules}. The \tech{Order Review queue} averaged \num{48.9} orders with maximum buildup of \num{106} orders, indicating \tech{workforce constraints} as the primary \tech{system limitation}.
+
+```{r oapm3-workforce-table, echo=FALSE}
+# Workforce analysis table
+workforce_data <- data.frame(
+  Worker = c("Rich", "Ann", "Dina"),
+  Schedule = c("10 AM - 2 PM (4 hrs)", "8 AM - 5 PM, break 10:30-11:30 (8 hrs)", "Always available (9 hrs)"),
+  Utilization = c("34.0%", "34.0%", "34.0%"),
+  Availability = c("Part-time", "Full-time with break", "Backup/Site worker"),
+  Queue_Impact = c("High", "High", "High")
+)
+
+kable(workforce_data, caption = "\\tech{Workforce Scheduling Analysis} - OAPM3", 
+      format = "latex", booktabs = TRUE) %>%
+  kable_styling(latex_options = c("striped", "hold_position"), font_size = 9) %>%
+  column_spec(1, width = "1.5cm") %>%
+  column_spec(2, width = "4cm") %>%
+  column_spec(3, width = "1.5cm") %>%
+  column_spec(4, width = "2.5cm") %>%
+  column_spec(5, width = "1.5cm")
+```
+
+### Demand Pattern vs. Capacity Analysis
+
+The \tech{time-varying arrival pattern} creates significant challenges for the constrained workforce, with \tech{peak periods} (\num{11} AM - \num{1} PM) generating \num{73} orders over \num{2} hours while the system processes approximately \num{14} orders during the same period. The mismatch between \tech{demand variability} and \tech{workforce capacity} results in \tech{queue accumulation} during \tech{peak periods} that the system cannot recover from during \tech{lower-demand periods}.
+
+```{r fig-oapm3-demand, fig.cap="\\textbf{\\tech{Demand Pattern Analysis}.} Hourly arrival rates show \\tech{significant variability} with peak periods (\\num{11} AM - \\num{1} PM) generating \\num{36}-\\num{37} orders per hour, creating \\tech{demand spikes} that exceed \\tech{workforce processing capacity}. The \\tech{time-varying pattern} demonstrates realistic manufacturing demand but highlights the need for \\tech{capacity planning} that accounts for peak period requirements.", fig.width=8, fig.height=4, fig.pos='H'}
+print(p_arrival_pattern)
+```
+
+## Interpretation
+
+\tech{Model OAPM3} shows the impact of \tech{workforce scheduling} on \tech{manufacturing system performance}. Despite having \num{3} workers and \num{2} computers, the system achieved only \num{29.0}\% of \tech{theoretical throughput} due to \tech{labor constraints} rather than equipment limitations. The uniform \num{34.0}\% utilization across workers with different schedules indicates that \tech{demand consistently exceeds workforce capacity}, creating persistent queuing regardless of individual \tech{worker availability patterns}.
+
+The \tech{wait-to-processing ratio} (\num{96.0}\% waiting vs \num{4.0}\% processing) shows how \tech{capacity mismatches amplify in manufacturing systems} with \tech{variable demand}. \tech{Computer resources} remained underutilized (\num{8.6}\%), indicating that \tech{upstream bottlenecks} prevent \tech{downstream resources} from reaching capacity. This pattern is characteristic of \tech{labor-intensive manufacturing} where \tech{workforce availability} becomes the constraining factor even when \tech{equipment capacity} appears adequate.
+
+The results suggest that \tech{capacity planning} must account for \tech{peak demand periods} rather than \tech{average demand levels}. The current \tech{workforce configuration} cannot handle the \num{36}-\num{37} orders per hour during \tech{peak periods}, leading to \tech{queue accumulation} that persists throughout the workday. \tech{System redesign} would require either additional workforce during \tech{peak periods} or \tech{demand smoothing strategies} to achieve acceptable \tech{performance levels}.
+
+# Conclusions
+
+## System Performance Assessment
+
+\tech{Model OAPM3} shows a \tech{workforce-constrained manufacturing system} where \tech{labor availability} dominates \tech{performance characteristics}. The system processed \num{62} orders during a \num{9}-hour workday, achieving \num{29.0}\% of \tech{theoretical throughput capacity} due to insufficient workforce relative to \tech{peak demand requirements}. Orders experienced \num{96.0}\% of \tech{system time} waiting in queues, with average \tech{total time} of \num{130.22} minutes compared to \num{5.21} minutes of actual \tech{processing time}.
+
+## Key Findings
+
+The analysis shows observations about \tech{multi-worker manufacturing systems} with \tech{time-varying demand}:
+
+**\tech{Workforce Utilization Patterns}**: All three workers achieved identical \num{34.0}\% utilization despite different schedules, indicating that \tech{demand exceeds capacity} regardless of individual \tech{worker availability}. \tech{Rich's} part-time schedule, \tech{Ann's} full-time schedule with break, and \tech{Dina's} backup availability all resulted in equivalent \tech{utilization rates}.
+
+**\tech{Bottleneck Identification}**: The \tech{Order Review stage} functions as the primary \tech{system constraint} with average \tech{queue lengths} of \num{48.9} orders and maximum buildup of \num{106} orders. \tech{Computer resources} remained underutilized at \num{8.6}\%, indicating that \tech{upstream labor constraints} prevent \tech{downstream equipment} from reaching capacity.
+
+**\tech{Demand-Capacity Mismatch}**: \tech{Peak arrival periods} (\num{36}-\num{37} orders per hour) exceed \tech{system processing capacity} by factors of \num{2}-\num{3}, creating \tech{queue accumulation} that persists throughout the workday. The system cannot recover during \tech{lower-demand periods} due to accumulated backlog from \tech{peak periods}.
+
+## Design Implications
+
+The results indicate that \tech{capacity planning} for \tech{manufacturing systems} must address \tech{peak demand requirements} rather than \tech{average demand levels}. Current \tech{workforce configuration} proves inadequate for realistic \tech{demand patterns}, suggesting the need for:
+
+```{r fig-design-implications, fig.cap="\\textbf{\\tech{Design Implications for System Improvement}.} Left: \\tech{Bottleneck visualization} shows demand flow constrained by \\tech{workforce capacity} at Order Review stage (flow width represents capacity). Right: \\tech{Strategy circles} sized by priority level.", fig.width=9, fig.height=4.5, fig.pos='H'}
+library(cowplot)
+
+# Create flow-based bottleneck visualization using rectangles (funnel shape)
+flow_stages <- data.frame(
+  stage = c("Demand", "Constraint", "Throughput"),
+  y_top = c(3.5, 2.2, 0.9),
+  y_bottom = c(3.0, 1.8, 0.4),
+  width = c(1.0, 0.18, 0.18),  # Width represents capacity
+  label = c("Demand\n23.8 orders/hr", "Order Review\n3 Workers", "Throughput\n6.9 orders/hr"),
+  value = c(23.8, 3, 6.9),
+  color = c("#B4D7EC", "#F5D4D8", "#D4E8F5")
+)
+
+p_bottleneck <- ggplot() +
+  # Draw flow stages as rectangles (funnel)
+  geom_rect(data = flow_stages,
+            aes(xmin = 0.5 - width/2, xmax = 0.5 + width/2,
+                ymin = y_bottom, ymax = y_top,
+                fill = color),
+            color = "#8AB4D3", linewidth = 1.2) +
+  # Add connecting tapered sections
+  geom_polygon(data = data.frame(
+    x = c(0, 1, 0.59, 0.41),
+    y = c(3.0, 3.0, 2.2, 2.2)
+  ), aes(x = x, y = y), fill = "#E8D7F1", color = "#8AB4D3", 
+  linewidth = 1, alpha = 0.6) +
+  geom_polygon(data = data.frame(
+    x = c(0.41, 0.59, 0.59, 0.41),
+    y = c(1.8, 1.8, 0.9, 0.9)
+  ), aes(x = x, y = y), fill = "#E8D7F1", color = "#8AB4D3", 
+  linewidth = 1, alpha = 0.6) +
+  # Add stage labels
+  geom_text(data = flow_stages,
+            aes(x = 0.5, y = (y_top + y_bottom)/2, label = label),
+            size = 3, fontface = "bold", family = "Avenir Next Medium",
+            color = "#2C4A5F", lineheight = 0.85) +
+  # Add capacity annotations on the right
+  geom_text(x = 1.15, y = 3.25, label = "Wide", 
+            size = 2.5, family = "Avenir Next", color = "#5F4A3F", hjust = 0) +
+  geom_text(x = 1.15, y = 2.0, label = "BOTTLENECK\nNarrow", 
+            size = 2.5, family = "Avenir Next", color = "#5F3F45", 
+            hjust = 0, lineheight = 0.8, fontface = "bold") +
+  geom_text(x = 1.15, y = 0.65, label = "Limited", 
+            size = 2.5, family = "Avenir Next", color = "#5F4A3F", hjust = 0) +
+  scale_fill_identity() +
+  theme_void() +
+  coord_fixed(ratio = 1, xlim = c(-0.1, 1.6), ylim = c(0.2, 3.7)) +
+  theme(plot.margin = margin(5, 5, 5, 5))
+
+# Create strategy circles on the right
+strategy_circles <- data.frame(
+  x = c(0, -0.4, 0.4, 0),
+  y = c(3.2, 2.2, 2.2, 1.2),
+  label = c("Additional\nWorkforce", "Demand\nSmoothing", "Alternative\nScheduling", "Process\nRedesign"),
+  detail = c("Peak periods", "Reduce peaks", "Match capacity", "Eliminate"),
+  color = c("#B4D7EC", "#D4E8F5", "#E8D7F1", "#F5D4D8"),
+  radius = c(0.38, 0.32, 0.32, 0.28)
+)
+
+# Create circles for strategies
+strat_circles_list <- lapply(1:nrow(strategy_circles), function(i) {
+  circle_df <- make_circle(strategy_circles$x[i], strategy_circles$y[i], strategy_circles$radius[i])
+  circle_df$group <- i
+  circle_df$color <- strategy_circles$color[i]
+  circle_df
+})
+all_strat_circles <- do.call(rbind, strat_circles_list)
+
+p_strategies <- ggplot() +
+  # Draw circles
+  geom_polygon(data = all_strat_circles,
+               aes(x = x, y = y, group = group, fill = color),
+               color = "#8AB4D3", linewidth = 1) +
+  # Add labels
+  geom_text(data = strategy_circles,
+            aes(x = x, y = y + 0.06, label = label),
+            size = 3, fontface = "bold", family = "Avenir Next Medium",
+            color = "#2C4A5F", lineheight = 0.85) +
+  geom_text(data = strategy_circles,
+            aes(x = x, y = y - 0.12, label = detail),
+            size = 2.3, family = "Avenir Next",
+            color = "#5F4A3F") +
+  # Add connecting lines
+  geom_segment(x = 0, xend = -0.25, y = 2.8, yend = 2.5,
+               color = "#8AB4D3", linewidth = 0.8) +
+  geom_segment(x = 0, xend = 0.25, y = 2.8, yend = 2.5,
+               color = "#8AB4D3", linewidth = 0.8) +
+  geom_segment(x = 0, xend = 0, y = 1.6, yend = 1.8,
+               color = "#8AB4D3", linewidth = 0.8) +
+  scale_fill_identity() +
+  theme_void() +
+  coord_fixed(ratio = 1, xlim = c(-0.8, 0.8), ylim = c(0.8, 3.6))
+
+# Combine plots - bottleneck on left, circles on right
+plot_grid(p_bottleneck, p_strategies, ncol = 2, rel_widths = c(0.9, 1.1))
+```
+
+The analysis demonstrates that \tech{equipment capacity} (computers) may be adequate while \tech{labor capacity} becomes the constraining factor in \tech{labor-intensive manufacturing operations}.
+
+## Limitations
+
+```{r fig-limitations, fig.cap="\\textbf{\\tech{Study Limitations and Constraints}.} Limitations categorized by impact level with visual emphasis on severity.", fig.width=8, fig.height=3, fig.pos='H'}
+limitations <- data.frame(
+  Limitation = c("Single\nReplication", "Random\nVariation", "Simplified\nScheduling", "No Flexible\nOptions"),
+  Description = c("Limits statistical\ninference",
+                  "Results subject to\nvariation",
+                  "Simplified compared\nto reality",
+                  "No consideration of\nflexibility"),
+  Impact = factor(c("High", "Medium", "Medium", "Low"), 
+                  levels = c("High", "Medium", "Low")),
+  Impact_Score = c(3, 2, 2, 1),
+  Color = c("#F5D4D8", "#E8D7F1", "#E8D7F1", "#D4E8F5")
+)
+
+ggplot(limitations, aes(x = reorder(Limitation, -Impact_Score), y = Impact_Score)) +
+  geom_col(aes(fill = Color), color = "#8AB4D3", linewidth = 1, width = 0.75) +
+  geom_text(aes(label = Description, y = Impact_Score/2),
+            size = 2.8, family = "Avenir Next",
+            color = "#2C4A5F", lineheight = 0.85) +
+  geom_text(aes(label = paste0("Impact: ", Impact), y = Impact_Score + 0.2),
+            size = 3, fontface = "bold", family = "Avenir Next Medium",
+            color = "#5F3F45") +
+  scale_fill_identity() +
+  scale_y_continuous(breaks = c(1, 2, 3), labels = c("Low", "Medium", "High")) +
+  labs(x = NULL, y = "Impact Level") +
+  theme_minimal() +
+  theme(
+    axis.title.y = element_text(size = 11, family = "Avenir Next Medium", color = "#2C4A5F"),
+    axis.text.x = element_text(size = 10, family = "Avenir Next Medium", 
+                                color = "#2C4A5F", face = "bold"),
+    axis.text.y = element_text(size = 10, family = "Avenir Next", color = "#5F4A3F"),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.background = element_rect(fill = NA, color = NA),
+    plot.background = element_rect(fill = NA, color = NA),
+    plot.margin = margin(10, 10, 10, 10)
+  ) +
+  coord_cartesian(ylim = c(0, 3.5), clip = "off")
+```
+
+# Appendix
+
+## Model Files
+
+```{r model-files-table, echo=FALSE}
+model_files <- data.frame(
+  Filename = c("OAPM3_RaitsesGil.doe", "OAPM3_RaitsesGil_rpt.xlsm"),
+  Type = c("Arena Model", "Excel Report"),
+  Description = c("Arena model file for OAPM3 Manufacturing System", "Complete Arena simulation results")
+)
+
+kable(model_files, caption = "\\tech{OAPM3 Model Files}", 
+      format = "latex", booktabs = TRUE, 
+      col.names = c("Filename", "Type", "Description")) %>%
+  kable_styling(latex_options = c("striped", "hold_position"), font_size = 9) %>%
+  column_spec(1, width = "4cm", monospace = TRUE) %>%
+  column_spec(2, width = "2.5cm") %>%
+  column_spec(3, width = "5.5cm")
+```
+
+## Data Files
+
+```{r data-files-table, echo=FALSE}
+data_files <- data.frame(
+  Filename = c("OAPM3_RaitsesGil_rpt_csvs/", 
+               "DiscreteTimeStatsByRep.csv", 
+               "ContinuousTimeStatsByRep.csv"),
+  Type = c("Directory", "CSV Data", "CSV Data"),
+  Description = c("CSV extracts from Arena results",
+                  "Entity and queue timing statistics",
+                  "Resource utilization and WIP statistics")
+)
+
+kable(data_files, caption = "\\tech{OAPM3 Data Files}", 
+      format = "latex", booktabs = TRUE, 
+      col.names = c("Filename", "Type", "Description")) %>%
+  kable_styling(latex_options = c("striped", "hold_position"), font_size = 9) %>%
+  column_spec(1, width = "4.5cm", monospace = TRUE) %>%
+  column_spec(2, width = "2cm") %>%
+  column_spec(3, width = "5.5cm")
+```
+
+## System Configuration Summary
+
+```{r config-summary, echo=FALSE}
+config_data <- data.frame(
+  Component = c("Simulation Length", "Orders Processed", "Arrival Pattern", 
+                "Workforce", "Computer Resources", "Primary Bottleneck"),
+  Specification = c("540 minutes (9-hour day)", "62 orders completed", 
+                   "Time-varying: 10-37 orders/hour", "3 workers with different schedules", 
+                   "2 shared computers", "Order Review (workforce constraint)")
+)
+
+kable(config_data, caption = "\\tech{OAPM3 System Configuration Summary}", 
+      format = "latex", booktabs = TRUE, 
+      col.names = c("System Component", "Configuration")) %>%
+  kable_styling(latex_options = c("striped", "hold_position")) %>%
+  column_spec(1, width = "3cm") %>%
+  column_spec(2, width = "6cm")
+```

@@ -1,0 +1,12 @@
+Time Frame of Simulations
+
+- Terminating - Steady-State
+
+- Specific starting, stopping - Long-run(technically forever)
+conaitions - Theoretically, initial conditions
+
+- Run length will be well-defined don't matter (but practically they
+(and finite) usually do)
+
+- Not clear how to terminate a
+simulation run

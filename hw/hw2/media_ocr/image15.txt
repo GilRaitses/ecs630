@@ -1,0 +1,15 @@
+Generation of values of[]\jjand TOC (iv)
+
+¢ Going into the y axis and with a random number u,
+(probability distribution ~ U[0, 1]) we obtain int, as a value for INT
+
+nN
+1.00 +
+0.95 +
+0.85 +
+0.62 7 Ej: u, = 0.375
+0.35 + ? , : : Int, = 5 days
+0.18 + | : :
+
+pf > INT (days)
+

@@ -1,0 +1,29 @@
+Comparison
+Results
+
+KEY
+
+¢ Original: Circles
+
+¢ Double-time: Triangles
+
+¢ Replication 1: Filled in
+
+¢ Replications 2-5: Hollow
+
+*™ Need: Statistical analysis of
+simulation output data
+
+Total production
+o 68
+
+Average waiting time in queue
+'@) Mo «4
+
+A &A
+
+Average total time in system
+
+Drill-press utilization
+
+lof 4

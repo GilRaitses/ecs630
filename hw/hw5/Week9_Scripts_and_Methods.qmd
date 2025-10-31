@@ -1,0 +1,521 @@
+---
+title: "ECS 630 - Week 9 Scripts and Methods"
+author: "Gil Raitses"
+date: "October 30, 2025"
+format:
+  pdf:
+    documentclass: article
+    geometry:
+      - margin=1in
+    fig-dpi: 300
+    toc: false
+    number-sections: false
+    pdf-engine: lualatex
+header-includes: |
+  \usepackage{fontspec}
+  \setmainfont{Avenir Next}[
+    UprightFont = *-UltraLight,
+    BoldFont = *-Medium,
+    ItalicFont = *-UltraLightItalic,
+    BoldItalicFont = *-MediumItalic
+  ]
+  \newfontfamily\headingfont{Didot}
+  \newfontfamily\numfont{Avenir Next Regular}
+  \newfontfamily\techfont{Avenir Next Medium}
+  \usepackage{xcolor}
+  \definecolor{eggplantpurple}{RGB}{75,0,130}
+  \newcommand{\num}[1]{{\numfont\textcolor[gray]{0.3}{#1}}}
+  \newcommand{\tech}[1]{{\techfont\textcolor[RGB]{105,100,100}{#1}}}
+  \usepackage{sectsty}
+  \allsectionsfont{\headingfont}
+  \subsectionfont{\headingfont\itshape\color[RGB]{90,60,60}}
+  \subsubsectionfont{\headingfont\itshape\color[RGB]{90,60,60}}
+  \setcounter{secnumdepth}{0}
+  \renewcommand{\thesubsection}{\hspace{-1em}}
+  \renewcommand{\thesubsubsection}{\hspace{-1em}}
+  \usepackage{amsmath}
+  \usepackage{amsfonts}
+  \usepackage{amssymb}
+  \usepackage{booktabs}
+  \usepackage{array}
+  \usepackage{colortbl}
+  \setlength{\arrayrulewidth}{0.5pt}
+  \arrayrulecolor{eggplantpurple}
+  \renewcommand{\toprule}{\arrayrulecolor{eggplantpurple}\specialrule{0.08em}{0em}{0.5em}\arrayrulecolor{eggplantpurple}}
+  \renewcommand{\midrule}{\arrayrulecolor{eggplantpurple}\specialrule{0.05em}{0em}{0em}\arrayrulecolor{eggplantpurple}}
+  \renewcommand{\bottomrule}{\arrayrulecolor{eggplantpurple}\specialrule{0.08em}{0em}{0em}\arrayrulecolor{eggplantpurple}}
+  \renewcommand{\cmidrule}{\arrayrulecolor{eggplantpurple}\cmidrule}
+  \usepackage{float}
+  \usepackage{placeins}
+  \usepackage{needspace}
+  \usepackage{etoolbox}
+  \usepackage{caption}
+  \makeatletter
+  \preto\section{\needspace{6\baselineskip}}
+  \preto\subsection{\needspace{6\baselineskip}}
+  \preto\subsubsection{\needspace{6\baselineskip}}
+  \makeatother
+  \captionsetup{margin=0.5in, font=small}
+  \setlength{\floatsep}{1.5em}
+  \setlength{\textfloatsep}{1.5em}
+  \usepackage{changepage}
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 10,
+  fig.height = 6,
+  dpi = 300
+)
+
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(knitr)
+library(kableExtra)
+library(tidyr)
+library(cowplot)
+library(grid)
+library(showtext)
+
+# Add EB Garamond font
+font_add(family = "EB Garamond", 
+         regular = "~/Library/Fonts/EBGaramond12-Regular.otf")
+showtext_auto()
+```
+
+# Introduction
+
+This document provides the submission information, analytical methods and computational scripts for Week 9 homework covering \tech{statistical replication analysis} and \tech{inventory system simulation}. The first question addresses determination of required replications to reduce the \tech{margin of error} to half its initial value using three distinct methods: the exact t-based method, the normal distribution approximation and an alternative approximation. The second question involves implementation and analysis of an \tech{OAPM(10) continuous-review inventory model} with \tech{stochastic demand} and \tech{replenishment lead time}.
+
+The \tech{replication analysis} utilizes initial data from \num{10} replications of \tech{Model 6-1} tracking \tech{total cost} and \tech{percent rejected} performance measures. The calculations apply standard \tech{confidence interval theory} for \tech{terminating simulations}, where the goal is to achieve a specified \tech{precision level} by determining the appropriate \tech{sample size}. The three methods differ in their handling of the \tech{distributional assumptions} and \tech{degrees of freedom corrections}.
+
+# Question 1: Replication Analysis for Model 6-1
+
+## Problem Statement
+
+\tech{Model 6-1} from the textbook represents a manufacturing system where initial performance is characterized by \tech{total cost} and \tech{percent rejected} metrics across \num{10} replications. The objective is to compute the number of additional replications required to reduce the \tech{initial margin of error} to half its value, maintaining a \num{95}\% \tech{confidence level}. The analysis applies three methods as prescribed in the textbook, each providing different computational approaches to the \tech{sample size determination} problem.
+
+```{r model61-data}
+# Data from Model 6-1 (first 10 replications)
+model61_data <- data.frame(
+  Replication = 1:10,
+  Total_Cost = c(22385.64, 20612.12, 23837.38, 21915.24, 22462.34,
+                 20573.78, 20935.88, 22078.91, 20056.75, 21325.23),
+  Percent_Rejected = c(12.2759, 11.6059, 10.4558, 11.9110, 13.5546,
+                       10.9804, 10.1093, 9.4256, 9.4972, 11.3388)
+)
+
+kable(model61_data, 
+      caption = "\\tech{Model 6-1 Initial Replication Data}", 
+      format = "latex", 
+      booktabs = TRUE,
+      col.names = c("Replication", "Total Cost (\\textdollar)", "Percent Rejected"),
+      digits = c(0, 2, 4),
+      align = c("c", "r", "r"),
+      escape = FALSE) %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
+```
+
+```{r fig-sample-size-precision, fig.cap="\\textbf{\\tech{Sample Size and Precision Relationship}.} The relationship between \\tech{sample size} and \\tech{half-width} (margin of error) for \\tech{Total Cost}, demonstrating the inverse square root relationship. The initial half-width $h_0 = \\$\num{827.82}$ at $n_0 = \\num{10}$ replications is shown, along with the target half-width $h = h_0/2 = \\$\num{413.91}$ requiring $n = \\num{40}$ replications. The dashed line illustrates the theoretical $1/\\sqrt{n}$ relationship, showing that halving the \\tech{margin of error} requires quadrupling the \\tech{sample size}.", fig.width=3, fig.height=1.875, fig.pos='H'}
+# Calculate sample size vs half-width relationship for Total Cost
+S_tc <- sd(model61_data$Total_Cost)
+n_initial <- 10
+t_initial <- qt(0.975, df = n_initial - 1)
+h_initial <- t_initial * S_tc / sqrt(n_initial)
+
+n_range <- seq(10, 50, by = 1)
+t_values <- qt(0.975, df = n_range - 1)
+half_widths <- t_values * S_tc / sqrt(n_range)
+
+precision_data <- data.frame(
+  n = n_range,
+  half_width = half_widths
+)
+
+# Add reference points
+reference_points <- data.frame(
+  n = c(10, 40),
+  half_width = c(h_initial, h_initial / 2),
+  label = c("Initial\n(n = 10)", "Target\n(n = 40)")
+)
+
+p_precision <- ggplot(precision_data, aes(x = n, y = half_width)) +
+  geom_line(color = "#8AB4D3", linewidth = 1.2, alpha = 0.7) +
+  geom_point(data = reference_points, aes(x = n, y = half_width), 
+             color = "#F5D4D8", fill = "#E8D7F1", shape = 21, size = 4, stroke = 1.5) +
+  geom_text(data = reference_points, aes(x = n, y = half_width, label = label),
+            vjust = -1.2, hjust = 0.5, size = 3.5, family = "Avenir Next Medium",
+            color = "#2C4A5F", lineheight = 0.85) +
+  geom_hline(yintercept = h_initial / 2, linetype = "dashed", 
+             color = "#E8D7F1", linewidth = 0.8, alpha = 0.6) +
+  geom_vline(xintercept = 40, linetype = "dashed", 
+             color = "#E8D7F1", linewidth = 0.8, alpha = 0.6) +
+  labs(x = "Sample Size (n)", 
+       y = "Half-Width ($)") +
+  theme_minimal() +
+  theme(
+    axis.title = element_text(size = 11, family = "Avenir Next Medium", color = "#2C4A5F"),
+    axis.title.y = element_text(margin = margin(r = 8)),
+    axis.text = element_text(size = 9, family = "Avenir Next", color = "#5F4A3F"),
+    panel.background = element_rect(fill = NA, color = NA),
+    plot.background = element_rect(fill = NA, color = NA),
+    panel.grid.major = element_line(color = "#E8D8CC", linewidth = 0.3),
+    panel.grid.minor = element_blank(),
+    plot.margin = margin(10, 5, 10, 8)
+  ) +
+  scale_y_continuous(labels = scales::dollar_format(), 
+                     breaks = seq(400, 900, by = 100)) +
+  scale_x_continuous(breaks = seq(10, 50, by = 10))
+
+# Create boxed plot with cinnamoroll theme
+bg_color <- "#FFF9F3"
+border_color <- "#B4D7EC"
+
+boxed_precision <- cowplot::ggdraw() +
+  theme(plot.background = element_rect(fill = bg_color, color = border_color, linewidth = 1)) +
+  cowplot::draw_plot(p_precision, x = 0.04, y = 0.04, width = 0.92, height = 0.92) +
+  cowplot::draw_grob(grid::rectGrob(gp = grid::gpar(fill = NA, col = border_color, lwd = 1.2)),
+                     x = 0, y = 0, width = 1, height = 1)
+
+print(boxed_precision)
+```
+
+\tech{Figure 1} shows the relationship between \tech{sample size} and \tech{half-width} for \tech{Total Cost}, illustrating the inverse square root relationship that drives the replication analysis. As shown in the figure, reducing the \tech{margin of error} by half requires quadrupling the \tech{sample size} from \num{10} to \num{40} replications.
+
+\begin{samepage}
+The \tech{confidence interval} for the mean of a \tech{terminating simulation} with $n_0$ replications is given by:
+
+$$
+\bar{X}_{n_0} \pm t_{n_0-1,1-\alpha/2} \frac{S}{\sqrt{n_0}}
+$$
+\end{samepage}
+
+where $\bar{X}_{n_0}$ is the sample mean, $S$ is the sample standard deviation and $t_{n_0-1,1-\alpha/2}$ is the \tech{t-distribution critical value} with $n_0-1$ \tech{degrees of freedom} at confidence level $1-\alpha$. The \tech{half-width} or \tech{margin of error} is $h_0 = t_{n_0-1,1-\alpha/2} S/\sqrt{n_0}$.
+
+## Summary Statistics
+
+```{r compute-statistics}
+# Compute summary statistics for Total Cost
+tc_stats <- model61_data %>%
+  summarise(
+    n = n(),
+    mean = mean(Total_Cost),
+    sd = sd(Total_Cost),
+    se = sd / sqrt(n),
+    df = n - 1,
+    t_critical = qt(0.975, df),
+    half_width = t_critical * se
+  )
+
+# Compute summary statistics for Percent Rejected
+pr_stats <- model61_data %>%
+  summarise(
+    n = n(),
+    mean = mean(Percent_Rejected),
+    sd = sd(Percent_Rejected),
+    se = sd / sqrt(n),
+    df = n - 1,
+    t_critical = qt(0.975, df),
+    half_width = t_critical * se
+  )
+
+summary_stats <- data.frame(
+  Measure = c("Total Cost", "Percent Rejected"),
+  n = c(tc_stats$n, pr_stats$n),
+  Mean = c(tc_stats$mean, pr_stats$mean),
+  SD = c(tc_stats$sd, pr_stats$sd),
+  SE = c(tc_stats$se, pr_stats$se),
+  t_critical = c(tc_stats$t_critical, pr_stats$t_critical),
+  Half_Width = c(tc_stats$half_width, pr_stats$half_width)
+)
+
+# Format numbers with commas for thousands
+summary_stats_formatted <- summary_stats
+summary_stats_formatted$Mean <- format(summary_stats$Mean, big.mark = ",", scientific = FALSE, nsmall = 2, trim = TRUE)
+summary_stats_formatted$SD <- format(summary_stats$SD, big.mark = ",", scientific = FALSE, nsmall = 2, trim = TRUE)
+summary_stats_formatted$SE <- format(summary_stats$SE, big.mark = ",", scientific = FALSE, nsmall = 2, trim = TRUE)
+summary_stats_formatted$Half_Width <- format(summary_stats$Half_Width, big.mark = ",", scientific = FALSE, nsmall = 2, trim = TRUE)
+
+kable(summary_stats_formatted,
+      caption = "\\tech{Summary Statistics from Initial 10 Replications}",
+      format = "latex",
+      booktabs = TRUE,
+      col.names = c("Measure", "\\(n_0\\)", "\\(\\bar{X}_{n_0}\\)", "\\(S\\)", "SE", "\\(t_{9,0.975}\\)", "\\(h_0\\)"),
+      escape = FALSE,
+      align = c("l", "c", "r", "r", "r", "r", "r")) %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
+```
+
+The initial \tech{sample size} is $n_0 = \num{10}$ replications, yielding a \tech{t-critical value} of $t_{9,0.975} = \num{2.262}$ for the \num{95}\% \tech{confidence level}. The \tech{mean total cost} is $\bar{X}_{n_0} = \$\num{21,618.23}$ with \tech{standard deviation} $S = \$\num{1,157.12}$, producing an initial \tech{half-width} of $h_0 = \$\num{827.82}$. For \tech{percent rejected}, the mean is $\bar{X}_{n_0} = \num{11.11}\%$ with $S = \num{1.32}\%$, yielding $h_0 = \num{0.94}\%$.
+
+## Method 1: Exact t-Distribution Method
+
+\begin{samepage}
+The exact method for determining the required number of replications $n$ to achieve a target \tech{half-width} $h$ uses the \tech{t-distribution} with updated \tech{degrees of freedom}:
+
+$$
+n = t_{n-1,1-\alpha/2}^2 \frac{S^2}{h^2}
+$$
+\end{samepage}
+
+where the target \tech{half-width} is $h = h_0/2$. This equation is implicit in $n$ since the \tech{t-critical value} depends on $n-1$ \tech{degrees of freedom}. The solution requires iteration: starting with an initial estimate, compute $n$, update the \tech{degrees of freedom}, recalculate the \tech{t-critical value} and iterate until convergence.
+
+```{r method1-exact}
+# Function to solve for n using exact t-distribution method
+solve_exact_t <- function(S, h, alpha = 0.05, max_iter = 100, tol = 1e-6) {
+  n_old <- 2  # Start with n=2
+  for (i in 1:max_iter) {
+    t_crit <- qt(1 - alpha/2, df = n_old - 1)
+    n_new <- ceiling(t_crit^2 * S^2 / h^2)
+    if (abs(n_new - n_old) < tol) {
+      return(n_new)
+    }
+    n_old <- n_new
+  }
+  return(n_old)
+}
+
+# Compute required replications for Total Cost
+h_target_tc <- tc_stats$half_width / 2
+n_exact_tc <- solve_exact_t(tc_stats$sd, h_target_tc)
+t_final_tc <- qt(0.975, df = n_exact_tc - 1)
+
+# Compute required replications for Percent Rejected
+h_target_pr <- pr_stats$half_width / 2
+n_exact_pr <- solve_exact_t(pr_stats$sd, h_target_pr)
+t_final_pr <- qt(0.975, df = n_exact_pr - 1)
+
+method1_results <- data.frame(
+  Measure = c("Total Cost", "Percent Rejected"),
+  h0 = c(tc_stats$half_width, pr_stats$half_width),
+  h_target = c(h_target_tc, h_target_pr),
+  S = c(tc_stats$sd, pr_stats$sd),
+  n_required = c(n_exact_tc, n_exact_pr),
+  df_final = c(n_exact_tc - 1, n_exact_pr - 1),
+  t_final = c(t_final_tc, t_final_pr)
+)
+
+# Format numbers with commas
+method1_formatted <- method1_results
+method1_formatted$h0 <- format(method1_results$h0, big.mark = ",", scientific = FALSE, nsmall = 2, trim = TRUE)
+method1_formatted$h_target <- format(method1_results$h_target, big.mark = ",", scientific = FALSE, nsmall = 2, trim = TRUE)
+method1_formatted$S <- format(method1_results$S, big.mark = ",", scientific = FALSE, nsmall = 2, trim = TRUE)
+
+kable(method1_formatted,
+      caption = "\\tech{Method 1: Exact t-Distribution Results}",
+      format = "latex",
+      booktabs = TRUE,
+      col.names = c("Measure", "\\(h_0\\)", "\\(h = h_0/2\\)", "\\(S\\)", "\\(n\\)", "df", "\\(t_{n-1,0.975}\\)"),
+      escape = FALSE,
+      align = c("l", "r", "r", "r", "c", "c", "r")) %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
+```
+
+The \tech{exact t-distribution method} yields $n = \num{40}$ replications for \tech{total cost} (with \tech{degrees of freedom} $df = \num{39}$ and $t_{39,0.975} = \num{2.023}$) and $n = \num{40}$ replications for \tech{percent rejected} (with $df = \num{39}$ and $t_{39,0.975} = \num{2.023}$). This method provides the theoretically correct \tech{sample size} by accounting for the \tech{t-distribution} appropriate for the final sample.
+
+## Method 2: Normal Distribution Approximation
+
+\begin{samepage}
+The normal distribution approximation replaces the \tech{t-distribution} with the \tech{standard normal distribution}, using $z_{1-\alpha/2}$ instead of $t_{n-1,1-\alpha/2}$:
+
+$$
+n \cong z_{1-\alpha/2}^2 \frac{S^2}{h^2}
+$$
+\end{samepage}
+
+For $\alpha = 0.05$, the \tech{critical value} is $z_{0.975} = \num{1.96}$. This approximation is valid for large \tech{sample sizes} where the \tech{t-distribution} converges to the normal distribution. The calculation is direct without iteration.
+
+```{r method2-normal}
+# Normal distribution approximation
+z_crit <- qnorm(0.975)
+
+# Total Cost
+n_normal_tc <- ceiling(z_crit^2 * tc_stats$sd^2 / h_target_tc^2)
+
+# Percent Rejected  
+n_normal_pr <- ceiling(z_crit^2 * pr_stats$sd^2 / h_target_pr^2)
+
+method2_results <- data.frame(
+  Measure = c("Total Cost", "Percent Rejected"),
+  z_critical = c(z_crit, z_crit),
+  S = c(tc_stats$sd, pr_stats$sd),
+  h_target = c(h_target_tc, h_target_pr),
+  n_required = c(n_normal_tc, n_normal_pr)
+)
+
+# Format numbers with commas
+method2_formatted <- method2_results
+method2_formatted$S <- format(method2_results$S, big.mark = ",", scientific = FALSE, nsmall = 2, trim = TRUE)
+method2_formatted$h_target <- format(method2_results$h_target, big.mark = ",", scientific = FALSE, nsmall = 2, trim = TRUE)
+
+kable(method2_formatted,
+      caption = "\\tech{Method 2: Normal Distribution Approximation Results}",
+      format = "latex",
+      booktabs = TRUE,
+      col.names = c("Measure", "\\(z_{0.975}\\)", "\\(S\\)", "\\(h = h_0/2\\)", "\\(n\\)"),
+      escape = FALSE,
+      align = c("l", "r", "r", "r", "c")) %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
+```
+
+The \tech{normal approximation} yields $n = \num{38}$ replications for both \tech{total cost} and \tech{percent rejected}. This approximation is slightly conservative compared to the exact method due to the smaller \tech{critical value} ($z_{0.975} = \num{1.96}$ versus $t_{39,0.975} = \num{2.023}$), but provides a quick closed-form solution without iteration.
+
+## Method 3: Alternative Approximation
+
+\begin{samepage}
+The alternative approximation method uses the initial \tech{half-width} ratio directly:
+
+$$
+n \cong n_0 \frac{h_0^2}{h^2}
+$$
+\end{samepage}
+
+This approach leverages the relationship that the \tech{half-width} is inversely proportional to the square root of the \tech{sample size}. Since $h = h_0/2$, it follows that $h^2 = h_0^2/4$, yielding:
+
+\begin{samepage}
+$$
+n \cong n_0 \frac{h_0^2}{h_0^2/4} = 4n_0
+$$
+\end{samepage}
+
+```{r method3-alternative}
+# Alternative approximation using h0/h ratio
+n_alt_tc <- ceiling(tc_stats$n * (tc_stats$half_width / h_target_tc)^2)
+n_alt_pr <- ceiling(pr_stats$n * (pr_stats$half_width / h_target_pr)^2)
+
+method3_results <- data.frame(
+  Measure = c("Total Cost", "Percent Rejected"),
+  n0 = c(tc_stats$n, pr_stats$n),
+  h0 = c(tc_stats$half_width, pr_stats$half_width),
+  h = c(h_target_tc, h_target_pr),
+  ratio_squared = c((tc_stats$half_width / h_target_tc)^2,
+                    (pr_stats$half_width / h_target_pr)^2),
+  n_required = c(n_alt_tc, n_alt_pr)
+)
+
+# Format numbers with commas
+method3_formatted <- method3_results
+method3_formatted$h0 <- format(method3_results$h0, big.mark = ",", scientific = FALSE, nsmall = 2, trim = TRUE)
+method3_formatted$h <- format(method3_results$h, big.mark = ",", scientific = FALSE, nsmall = 2, trim = TRUE)
+
+kable(method3_formatted,
+      caption = "\\tech{Method 3: Alternative Approximation Results}",
+      format = "latex",
+      booktabs = TRUE,
+      col.names = c("Measure", "\\(n_0\\)", "\\(h_0\\)", "\\(h\\)", "\\((h_0/h)^2\\)", "\\(n\\)"),
+      escape = FALSE,
+      align = c("l", "c", "r", "r", "r", "c")) %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
+```
+
+The \tech{alternative approximation} yields $n = \num{40}$ replications for both measures. Since the target \tech{half-width} is exactly half the initial value, the formula simplifies to $n = 4n_0 = 4(\num{10}) = \num{40}$. This method provides the simplest calculation and agrees with the exact method for this particular ratio.
+
+## Comparison of Methods
+
+```{r methods-comparison}
+comparison_data_table <- data.frame(
+  Method = c("Method 1: Exact t", "Method 2: Normal Approx", "Method 3: Alternative Approx",
+             "Method 1: Exact t", "Method 2: Normal Approx", "Method 3: Alternative Approx"),
+  Measure = c(rep("Total Cost", 3), rep("Percent Rejected", 3)),
+  n_required = c(n_exact_tc, n_normal_tc, n_alt_tc,
+                 n_exact_pr, n_normal_pr, n_alt_pr),
+  Additional = c(n_exact_tc - 10, n_normal_tc - 10, n_alt_tc - 10,
+                 n_exact_pr - 10, n_normal_pr - 10, n_alt_pr - 10)
+)
+
+kable(comparison_data_table,
+      caption = "\\tech{Comparison of Three Methods for Replication Determination}",
+      format = "latex",
+      booktabs = TRUE,
+      col.names = c("Method", "Measure", "Total \\(n\\)", "Additional Replications"),
+      digits = 0,
+      escape = FALSE,
+      align = c("l", "l", "c", "c")) %>%
+  kable_styling(latex_options = c("striped", "hold_position")) %>%
+  pack_rows("Total Cost", 1, 3) %>%
+  pack_rows("Percent Rejected", 4, 6)
+```
+
+```{r fig-methods-comparison, fig.cap="\\textbf{\\tech{Comparison of Replication Methods}.} Bar chart shows the required total replications for each method applied to \\tech{Total Cost} (left) and \\tech{Percent Rejected} (right). Methods 1 and 3 yield identical results (\\num{40} replications), while Method 2 is slightly more conservative (\\num{38} replications).", fig.width=8, fig.height=2.4, fig.pos='H'}
+# Create plot data with wrapped labels
+comparison_data_plot <- data.frame(
+  Method = c("Method 1:\nExact t", "Method 2:\nNormal Approx", "Method 3:\nAlternative Approx",
+             "Method 1:\nExact t", "Method 2:\nNormal Approx", "Method 3:\nAlternative Approx"),
+  Measure = c(rep("Total Cost", 3), rep("Percent Rejected", 3)),
+  n_required = c(n_exact_tc, n_normal_tc, n_alt_tc,
+                 n_exact_pr, n_normal_pr, n_alt_pr)
+)
+
+# Cinnamoroll color palette
+colors_methods <- c("Method 1:\nExact t" = "#B4D7EC",
+                   "Method 2:\nNormal Approx" = "#E8D7F1", 
+                   "Method 3:\nAlternative Approx" = "#F5D4D8")
+
+p_comparison <- ggplot(comparison_data_plot, aes(x = Method, y = n_required, fill = Method)) +
+  geom_col(width = 0.7, color = "#8AB4D3", linewidth = 1) +
+  geom_text(aes(label = n_required), vjust = -0.5, size = 4.5, 
+            fontface = "bold", color = "#2C4A5F") +
+  facet_wrap(~ Measure, ncol = 2) +
+  scale_fill_manual(values = colors_methods) +
+  labs(x = NULL, y = "Required Replications (n)") +
+  theme_minimal() +
+  theme(
+    axis.title.y = element_text(size = 13, family = "Avenir Next Medium", color = "#2C4A5F", 
+                                margin = margin(r = 8)),
+    axis.text.x = element_text(size = 9, family = "Avenir Next", color = "#5F4A3F", 
+                                angle = 0, hjust = 0.5, vjust = 1),
+    axis.text.y = element_text(size = 11, family = "Avenir Next", color = "#5F4A3F"),
+    strip.text = element_text(size = 12, family = "Avenir Next Medium", 
+                              color = "#2C4A5F", face = "bold"),
+    legend.position = "none",
+    panel.background = element_rect(fill = NA, color = NA),
+    plot.background = element_rect(fill = NA, color = NA),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank(),
+    plot.margin = margin(10, 10, 10, 10)
+  ) +
+  coord_cartesian(ylim = c(0, 45), clip = "off")
+
+# Create boxed plot with cinnamoroll theme
+bg_color <- "#FFF9F3"
+border_color <- "#B4D7EC"
+
+boxed_comparison <- cowplot::ggdraw() +
+  theme(plot.background = element_rect(fill = bg_color, color = border_color, linewidth = 1)) +
+  cowplot::draw_plot(p_comparison, x = 0.04, y = 0.04, width = 0.92, height = 0.92) +
+  cowplot::draw_grob(grid::rectGrob(gp = grid::gpar(fill = NA, col = border_color, lwd = 1.2)),
+                     x = 0, y = 0, width = 1, height = 1)
+
+print(boxed_comparison)
+```
+
+The three methods produce similar results with minor differences. The \tech{exact t-distribution method} (Method 1) and the \tech{alternative approximation} (Method 3) both yield $n = \num{40}$ replications, representing \num{30} additional replications beyond the initial \num{10}. The \tech{normal approximation} (Method 2) yields $n = \num{38}$ replications, differing by only \num{2} replications. The agreement between Methods 1 and 3 occurs because the target \tech{half-width reduction factor} of \num{2} produces a \tech{sample size ratio} of \num{4}, which closely matches the \tech{t-distribution} adjustment at this \tech{sample size}.
+
+## Interpretation
+
+Reducing the \tech{margin of error} by half requires approximately quadrupling the \tech{sample size} from \num{10} to \num{40} replications. This relationship follows from the \tech{central limit theorem}, where the \tech{standard error} decreases as $1/\sqrt{n}$, making the \tech{half-width} proportional to $1/\sqrt{n}$.
+
+The close agreement between the \tech{exact method} and the \tech{alternative approximation} validates the use of the simpler \tech{approximation formula} for this \tech{precision target}. The \tech{normal approximation} produces slightly smaller values due to the use of $z_{0.975} = \num{1.96}$ instead of $t_{39,0.975} = \num{2.023}$, a difference that becomes negligible at larger \tech{sample sizes}. In practice, Method 1 should be used when exact \tech{confidence intervals} are required, while Method 3 provides a quick estimate suitable for planning purposes.
+
+# Conclusions
+
+## Summary of Results
+
+This analysis applies three methods for determining the required \tech{sample size} to achieve a specified \tech{precision level} in \tech{simulation studies}. The \tech{exact t-distribution method} provides the theoretically correct solution by accounting for the \tech{finite-sample distribution}, while the \tech{normal approximation} and \tech{alternative approximation} offer simpler calculations. All three methods converge to similar values ($n = \num{38}$ to \num{40} replications) for the goal of halving the \tech{margin of error}.
+
+## Key Findings
+
+The \tech{replication analysis} examines the relationship between \tech{sample size} and \tech{confidence interval precision}. Reducing the \tech{margin of error} by a factor of two requires quadrupling the \tech{sample size}, a consequence of the $1/\sqrt{n}$ dependence of the \tech{standard error}.
+
+## Practical Implications
+
+The \tech{replication methods} apply to \tech{experimental design}. The \tech{alternative approximation} (Method 3) provides a quick estimate based on the desired \tech{precision improvement factor}, while the \tech{exact method} (Method 1) can be used for formal \tech{statistical inference}. The close agreement between methods at moderate \tech{sample sizes} ($n \geq 30$) supports the use of simpler approximations for initial planning.
+

@@ -1,0 +1,15 @@
+Calculation of the initial value for ILI (i)
+
+¢ INL = Necessary stock to cover the demand between
+arrivals + safety stock
+
+A
+Inventory
+
+500
+500 [| soo
+
+Time
+
+>
+

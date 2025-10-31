@@ -1,0 +1,21 @@
+Strategy for Data Collection and Analysis
+
+¢ For terminating case, make IID replications
+- Run/Setup/Replication Parameters: Number of Replications field
+- Check both boxes for Initalize Between Replications
+
+¢ Seperate results for each replication - Category by Replication report
+
+Model 5-3 (Model 6-1), base case, 10 replications
+
+1 $33,916.08 11.0988%
+2 $33,264.25 8.4871%
+5 $30,562.44 9.7281%
+4 $35,257.30 9.0955%
+3) $37,042.22 10.4482%
+6 $34,611.31 9.1141%
+7 $35,038.53 11.1049%
+8 $34,677.67 11.5966%
+9 $29,788.21 10.5551%
+10 $34,891.75 11.2510%
+

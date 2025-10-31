@@ -1,0 +1,17 @@
+Nomenclature
+
+D = day
+LI = initial level of inventory
+
+PLI = present level of inventory
+
+NT = inter-arrival time of trains
+
+TOC = tons of coal that depart each day
+DOA = day of next train's arrival
+
+CCI = cumulative cost of inventory
+
+CCS = cumulative cost of shortage
+
+CCT = cumulative cost of total cost

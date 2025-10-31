@@ -1,0 +1,16 @@
+Generation of values of[]{jjand TOC (iii)
+
+¢ Representation of the probability function for INT
+
+1.00 -+-
+0.95 +
+
+0.85 +
+
+0.62 +
+
+0.55 +
+
+0.18 + | : : : :
+> INT (days)
+

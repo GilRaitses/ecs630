@@ -1,0 +1,205 @@
+---
+title: "Week 3 Homework Assignment"
+subtitle: "ECS 630 - Simulation and Data Analytics"
+author: "Gil Raitses"
+date: "September 22, 2025"
+format:
+  pdf:
+    documentclass: article
+    geometry: margin=1in
+    fontsize: 11pt
+    fig-width: 6
+    fig-height: 4
+    fig-pos: "H"
+    extra_dependencies: ["float", "needspace", "lastpage", "tikz", "pgfplots", "pgfplotstable"]
+    include-in-header:
+      - text: |
+          \usepackage{amsmath}
+          \usepackage{amsfonts}
+          \usepackage{amssymb}
+          \usepackage{booktabs}
+          \usepackage{longtable}
+          \usepackage{graphicx}
+          \usepackage{fancyhdr}
+          \usepackage{lastpage}
+          \usepackage{afterpage}
+          \usepackage{needspace}
+          \usepackage{float}
+          \usepackage{tikz}
+          \usetikzlibrary{positioning}
+          \usepackage{pgfplots}
+          \pgfplotsset{compat=1.18}
+          % Header/footer style
+          \fancypagestyle{main}{
+            \fancyhf{}
+            \fancyhead[L]{ECS 630}
+            \fancyhead[C]{Week 3 Assignment}
+            \fancyhead[R]{Gil Raitses}
+            \fancyfoot[L]{gjraitse@syr.edu}
+            \fancyfoot[C]{Page \thepage\ of \pageref{LastPage}}
+            \fancyfoot[R]{Instructor: Ki Young Jeong}
+            \renewcommand{\headrulewidth}{0.4pt}
+            \renewcommand{\footrulewidth}{0.4pt}
+          }
+          \fancypagestyle{plain}{
+            \fancyhf{}
+            \fancyfoot[C]{\thepage}
+            \renewcommand{\headrulewidth}{0pt}
+            \renewcommand{\footrulewidth}{0pt}
+          }
+          % Apply header/footer from first page onward
+          \AtBeginDocument{\pagestyle{main}}
+          % Figure caption styling: smaller, italic, tighter spacing
+          \usepackage{caption}
+          \captionsetup[figure]{font=footnotesize,labelfont=it,textfont=it,aboveskip=4pt,belowskip=4pt}
+          % Table caption styling: below table, small italic text, bold label
+          \captionsetup[table]{position=below,font=footnotesize,labelfont=bf,textfont=it,aboveskip=4pt,belowskip=6pt}
+      - file: metrics_macros.tex
+---
+
+\begin{abstract}
+This report evaluates a two‑operation painting system with capacity‑limited drying over a 24‑hour horizon. A discrete‑event simulation was developed with exponential interarrivals (mean 5 minutes), triangular painting times \(\mathrm{Tri}(1,4.5,7)\), a fixed 15‑minute drying delay with ten concurrent spots, and uniform finishing times \(\mathrm{Unif}(0.5,9)\); first‑come, first‑served queues and non‑preemptive servers were assumed. One replication of 1,440 minutes was executed while recording pathwise waiting and sojourn times, together with time integrals of queue lengths and server busy indicators. The average total time in system was \AvgTsys\ minutes and the time‑average number in system was \LSys. For painting, the average time in queue was \WqPaint\ minutes with a time‑average queue of \LqPaint\ and utilization of \UtilPaintPct\%. For finishing, the average time in queue was \WqFinish\ minutes with a time‑average queue of \LqFinish\ and utilization of \UtilFinishPct\%. These findings indicate that finishing is the primary bottleneck under the assumed loads and distributions, whereas the ten drying spots did not bind; potential improvements include adding finishing capacity or reducing finishing‑time variability. Figures and an Excel export accompany the narrative.
+\end{abstract}
+
+\newpage
+
+# Methodology
+
+## Motivation and Objectives
+
+The assignment asks for a faithful simulation of a two‑operation paint–dry–finish process and a quantitative assessment of system performance over a 24‑hour operating horizon. The core objectives are to (i) implement the process logic with realistic stochastic primitives; (ii) compute pathwise and time‑average performance measures that characterize congestion and delay; and (iii) interpret the results to identify the constraining resources and practical levers for improvement.
+
+## Model
+
+The arrival process is modeled as a Poisson process with rate $\lambda = \tfrac{1}{5}\,\mathrm{min}^{-1}$. Painting service times are $S_{p} \sim \mathrm{Tri}(1,\,4.5,\,7)$ minutes. Drying is a deterministic delay of $D = 15\,\mathrm{min}$ with capacity $c_{d} = 10$ concurrent spots and no resource consumption. Finishing service times are $S_{f} \sim \mathrm{Unif}(0.5,\,9)$ minutes. All queues are first-come, first-served; resources are non-preemptive. Statistics are collected over the interval $[0,\,1440] \, \mathrm{min}$.
+
+## Results
+
+The key performance metrics for a single 24-hour replication are summarized in Table 1. Values are computed from entity path statistics (for times in queue and total time in system), time integrals of queue length and busy indicators (for time-average numbers and utilizations), and are reported in minutes, counts, or percentages as noted.
+
+\Needspace{12\baselineskip}
+\begin{table}[H]
+\centering
+\begin{tabular}{p{0.55\textwidth} p{0.35\textwidth}}
+\toprule
+\textbf{Average total time in system} & \AvgTsys\ minutes \\
+\textbf{Time-average number in system} & \LSys \\
+\textbf{Painting queue} & \WqPaint\ min; \LqPaint; \UtilPaintPct\% \\
+\textbf{Finishing queue} & \WqFinish\ min; \LqFinish; \UtilFinishPct\% \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{Performance metrics summary (single 24-hour replication).} Interpretation: the left column lists each metric (row headings in bold). The right column reports the observed value and units. For queue metrics, the order is “average time in queue (minutes); time-average number in queue (count); utilization (percent of time busy)”.}
+\label{tab:perf}
+\end{table}
+
+\clearpage
+
+## Figures
+
+Figure 1 depicts the process flow with resources and distributions, and Figure 2 presents the observed performance metrics as a comparative bar chart.
+
+\begin{figure}[H]
+\centering
+\resizebox{0.80\textwidth}{!}{%
+\begin{tikzpicture}[node distance=2.0cm,>=stealth,thick]
+  % Nodes
+  \node[draw,rounded corners,align=center,minimum width=3.2cm,minimum height=1.0cm] (arr) {Arrivals\\$\text{Exp}(\,\lambda{=}1/5\,)$};
+  \node[draw,rounded corners,align=center,minimum width=3.6cm,minimum height=1.0cm,right=of arr] (paint) {Paint (1 server)\\$\text{Tri}(1,4.5,7)$};
+  \node[draw,rounded corners,align=center,minimum width=3.8cm,minimum height=1.0cm,right=of paint] (dry) {Drying Spots (10)\\delay $=15\,\text{min}$};
+  \node[draw,rounded corners,align=center,minimum width=3.8cm,minimum height=1.0cm,right=of dry] (finish) {Finish (1 server)\\$\text{Unif}(0.5,9)$};
+  \node[draw,rounded corners,align=center,minimum width=2.8cm,minimum height=1.0cm,right=of finish] (dep) {Departures};
+  % Arrows
+  \draw[->] (arr) -- (paint);
+  \draw[->] (paint) -- node[above]{release paint} (dry);
+  \draw[->] (dry) -- (finish);
+  \draw[->] (finish) -- (dep);
+\end{tikzpicture}%
+}
+\caption{Process flow used in the simulation. Parts arrive according to an exponential process with mean 5 minutes, receive service at a single painting server with $\mathrm{Tri}(1,4.5,7)$ minutes, wait (if needed) for a capacity-limited drying delay of 15 minutes with 10 concurrent spots (no server), and then receive service at a single finishing server with $\mathrm{Unif}(0.5,9)$ minutes before departure. Queueing can occur at painting and finishing only.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+  \begin{axis}[
+    ybar,
+    bar width=8pt,
+    height=5.2cm,
+    width=0.9\linewidth,
+    symbolic x coords={Avg Tsys,L(sys),Wq(Paint),Lq(Paint),Util(Paint),Wq(Finish),Lq(Finish),Util(Finish)},
+    xtick=data,
+    xticklabel style={rotate=40,anchor=east,align=right,text width=1.8cm},
+    ylabel={Value (min, count, \%)},
+    ymin=0,
+    enlarge x limits=0.05
+  ]
+    % Non-utilization metrics (minutes / counts) — zeros for util categories to preserve alignment
+    \addplot+[
+      bar shift=0pt,
+      nodes near coords,
+      nodes near coords style={/pgf/number format/.cd,fixed,precision=2}
+    ] coordinates {
+      (Avg Tsys,\AvgTsys) (L(sys),\LSys) (Wq(Paint),\WqPaint) (Lq(Paint),\LqPaint) (Util(Paint),0) (Wq(Finish),\WqFinish) (Lq(Finish),\LqFinish) (Util(Finish),0)
+    };
+    % Utilizations scaled to percentage for plotting only — zeros for non-util categories to preserve alignment
+    \addplot+[
+      bar shift=0pt,
+      nodes near coords={\pgfmathprintnumber[fixed,precision=1]{\pgfplotspointmeta}\%},
+      nodes near coords style={/tikz/xshift=4pt,/tikz/anchor=west,/tikz/text=red}
+    ] coordinates {
+      (Avg Tsys,0) (L(sys),0) (Wq(Paint),0) (Lq(Paint),0) (Util(Paint),\UtilPaintPct) (Wq(Finish),0) (Lq(Finish),0) (Util(Finish),\UtilFinishPct)
+    };
+  \end{axis}
+\end{tikzpicture}
+\caption{Performance metrics from a single 24-hour replication. Blue bars report time- and count-based quantities: average total time in system (minutes), overall time-average number in system, and $W_q$/$L_q$ for each station. Red bars report utilizations (percent busy). Finishing shows higher congestion and utilization (\UtilFinishPct\%) than painting (\UtilPaintPct\%), consistent with finishing acting as the primary bottleneck under the assumed loads and distributions.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+  \begin{axis}[
+    height=5.2cm,
+    width=0.9\linewidth,
+    xlabel={Time (min)},
+    ylabel={Queue length},
+    legend style={at={(0.5,1.02)},anchor=south,legend columns=2},
+    legend cell align={left},
+    ymin=0,
+    xmin=0, xmax=1440,
+    xtick={0,240,480,720,960,1200,1440},
+    scaled x ticks=false,
+    xticklabel style={/pgf/number format/fixed,/pgf/number format/precision=0},
+    clip=true
+  ]
+    \addplot+[thick,blue] table[x=time,y=Q_paint,col sep=comma] {./timeline_week3.csv};
+    \addlegendentry{Painting queue (blue)}
+    \addplot+[thick,red] table[x=time,y=Q_finish,col sep=comma] {./timeline_week3.csv};
+    \addlegendentry{Finishing queue (red)}
+  \end{axis}
+\end{tikzpicture}
+\caption{Queue-length trajectories over the 24-hour horizon with ticks every 240 minutes. The finishing queue (red) sustains longer plateaus and higher peaks than the painting queue (blue), mirroring the higher utilization in Figure 2 and indicating that finishing is the limiting resource. Drying is not plotted because it is a fixed 15-minute delay with a capacity of 10 spots and did not bind in this replication.}
+\end{figure}
+
+\clearpage
+
+# Discussion and Conclusion
+
+The simulation indicates that finishing is the limiting resource: its utilization (\UtilFinishPct\%) and queue length (time‑average \LqFinish) exceed those of painting (\UtilPaintPct\%, \LqPaint). The resulting average time in system (\AvgTsys\ minutes) and overall time‑average number in system (\LSys) are therefore driven primarily by downstream congestion rather than the painting stage. Under the assumed arrival rate and service distributions, the 10‑spot drying capacity does not bind and behaves as a deterministic transport delay.
+
+Two immediate improvement levers emerge. First, modest finishing capacity augmentation (e.g., a second server or overtime) should directly reduce both $W_q$ and $L_q$ at finishing and, by Little’s Law, lower the system‑wide sojourn time. Second, reducing finishing‑time variability (e.g., setup standardization) can decrease waiting without changing mean capacity. If management seeks to hold current staffing, upstream demand smoothing (reducing arrival variability) would also mitigate congestion. Additional replications and sensitivity experiments (arrival rate, drying capacity, service‑time parameters) would quantify robustness and guide cost–benefit trade‑offs.
+
+# Appendix A: Detailed Work and Calculations
+
+The model adopts a discrete-event framework over the time horizon $[0,1440]$ minutes. Let $N(t)$ denote the number of parts in the system at time $t$. The time-average number in system is computed as
+\begin{equation}
+\bar{N} = \frac{1}{T} \int_{0}^{T} N(t)\,dt, \quad T=1440.
+\end{equation}
+For the painting and finishing stations, let $Q_{p}(t)$ and $Q_{f}(t)$ denote the queue lengths at time $t$, and let $B_{p}(t), B_{f}(t) \in \{0,1\}$ indicate server-busy states. The corresponding time averages are
+\begin{equation}
+\bar{Q}_{p} = \frac{1}{T} \int_{0}^{T} Q_{p}(t)\,dt, \qquad \bar{Q}_{f} = \frac{1}{T} \int_{0}^{T} Q_{f}(t)\,dt,
+\end{equation}
+with utilizations
+\begin{equation}
+U_{p} = \frac{1}{T} \int_{0}^{T} B_{p}(t)\,dt, \qquad U_{f} = \frac{1}{T} \int_{0}^{T} B_{f}(t)\,dt.
+\end{equation}
+Average waiting times in queue are obtained from pathwise entity measurements as arithmetic means over entities that began service within the observation window, while the average total time in system is computed over entities that completed the finishing operation within the observation window. All quantities are reported in minutes, and notational conventions are summarized inline with each equation.

@@ -1,0 +1,1 @@
+Lab01 submission: Submit the completed Arena models OAPM1 and OAPM2 together with their run results. Use the example of run results shown on the PowerPoint (Kelton_7e_CH3_Guided_Tour_of_Arena_PPT.pptx) page 46 as the reference for what to report and how to present it. Include the model files and the corresponding outputs from the runs in your submission package.

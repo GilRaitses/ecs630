@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Data (large files)
+data/
+*.csv
+*.parquet
+*.h5
+*.hdf5
+
+# Output directories
+output/
+!output/.gitkeep
+
+# Model files
+*.pkl
+*.joblib
+*.h5
+*.pb
+
+# Jupyter
+.ipynb_checkpoints
+*.ipynb
+
+# R/RStudio
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+
+# Quarto
+_quarto_cache/
+*.html
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+

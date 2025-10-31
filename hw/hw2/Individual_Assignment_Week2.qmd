@@ -1,0 +1,424 @@
+---
+title: "ECS 630 - Simulation and Data Analytics"
+subtitle: |
+  Week 2 Homework Assignment\\
+  Gil Raitses • gjraitse@syr.edu\\
+  Student ID: 564551736 • Instructor: Ki Young Jeong
+author: "Gil Raitses"
+date: "September 11, 2025"
+format:
+  pdf:
+    documentclass: article
+    geometry: margin=1in
+    fontsize: 11pt
+    fig-width: 6
+    fig-height: 4
+    fig-pos: "H"
+    extra_dependencies: ["float", "needspace", "lastpage"]
+    include-in-header:
+      - text: |
+          \usepackage{amsmath}
+          \usepackage{amsfonts}
+          \usepackage{amssymb}
+          \usepackage{booktabs}
+          \usepackage{longtable}
+          \usepackage{graphicx}
+          \usepackage{fancyhdr}
+          \usepackage{lastpage}
+          \usepackage{afterpage}
+          \usepackage{needspace}
+          \usepackage{float}
+          
+          % Title page plain, then main style
+          \fancypagestyle{main}{
+            \fancyhf{}
+            \fancyhead[L]{ECS 630}
+            \fancyhead[C]{Week 2 Assignment}
+            \fancyhead[R]{Gil Raitses}
+            \fancyfoot[C]{Page \thepage\ of \pageref{LastPage}}
+            \renewcommand{\headrulewidth}{0.4pt}
+            \renewcommand{\footrulewidth}{0.4pt}
+          }
+          \fancypagestyle{plain}{
+            \fancyhf{}
+            \fancyfoot[C]{\thepage}
+            \renewcommand{\headrulewidth}{0pt}
+            \renewcommand{\footrulewidth}{0pt}
+          }
+          \AtBeginDocument{\thispagestyle{plain}}
+          \afterpage{\pagestyle{main}}
+          
+          % Default float placement
+          \makeatletter
+          \def\fps@figure{htbp}
+          \def\fps@table{htbp}
+          \makeatother
+---
+
+# Question 1
+
+You have watched the lecture video titled "Introduction to Functional Specifications/Flowcharts (DEMS ii)" In the lecture (see the corresponding PPT slides), we have discussed the Example (i) where **trains transport the coal** to the deposit based on 2 and 8 days interarrival time and the trucks removes a load between 70 and 130 tons from the deposit.
+
+We have generated 10 random numbers between 0 and 1 for INT and TOC, respectively.
+
+\vspace{1em}
+
+| **Step** | **U(0,1) for INT** | **INT (days)** | **U(0,1) for TOC** | **TOC (tons)** |
+|:--------:|:------------------:|:--------------:|:-------------------:|:--------------:|
+| 1        | 0.0105             | 2              | 0.7640              | 110            |
+| 2        | 0.7954             |                | 0.4044              |                |
+| 3        | 0.4712             |                | 0.3382              |                |
+| 4        | 0.6192             |                | 0.1644              |                |
+| 5        | 0.3098             |                | 0.4089              |                |
+| 6        | 0.7851             |                | 0.1261              |                |
+| 7        | 0.6184             |                | 0.5083              |                |
+| 8        | 0.6684             |                | 0.2897              |                |
+| 9        | 0.9448             |                | 0.7686              |                |
+| 10       | 0.1706             |                | 0.0760              |                |
+
+\vspace{0.5em}
+
+**Table 1.** Uniformly distributed Random Numbers (0,1) for INT and TOC
+
+## Part 1a (10 points)
+Use the random numbers between 0 and 1 in Table 1 to generate INT and TOC in Table 1 based on the distribution tables of INT and TOC in the PowerPoint slide (This is called an **inversion technique** or an **Inverse Transform Procedure**). Fill Table 1 with your results.
+
+\vspace{1em}
+
+::: {.callout-note icon=false}
+## Answer 1a: Completed Table 1 with INT and TOC Values
+
+Using the inverse transform method with CDF lookup tables (detailed calculations shown in Appendix A.1), the completed values are:
+
+\vspace{0.5em}
+
+| **Step** | **U(0,1) for INT** | **INT (days)** | **U(0,1) for TOC** | **TOC (tons)** |
+|:--------:|:------------------:|:--------------:|:-------------------:|:--------------:|
+| 1        | 0.0105             | 2              | 0.7640              | 110            |
+| 2        | 0.7954             | 6              | 0.4044              | 100            |
+| 3        | 0.4712             | 5              | 0.3382              | 90             |
+| 4        | 0.6192             | 5              | 0.1644              | 80             |
+| 5        | 0.3098             | 4              | 0.4089              | 100            |
+| 6        | 0.7851             | 6              | 0.1261              | 80             |
+| 7        | 0.6184             | 5              | 0.5083              | 100            |
+| 8        | 0.6684             | 6              | 0.2897              | 90             |
+| 9        | 0.9448             | 7              | 0.7686              | 110            |
+| 10       | 0.1706             | 3              | 0.0760              | 70             |
+
+\vspace{0.5em}
+
+**Method**: Inverse Transform Sampling using $X = F^{-1}(U)$ where for discrete distributions, we find the smallest $x$ such that $F(x) \geq u$.
+:::
+
+\vspace{2em}
+
+## Part 1b (10 points)
+Use the flow chart and complete the hand simulation 6 times using the INT and TOC calculated in (a) by filling out Table 2. For example, when the flow chart says "Generate INT" you can use INT in the table according to its chronological order.
+
+\vspace{1em}
+
+| **D** | **DOA** | **INT used** | **TOC used** | **PLI** | **CCT** |
+|:-----:|:-------:|:------------:|:------------:|:-------:|:-------:|
+| 0     |         |              |              |         |         |
+| 1     |         |              |              |         |         |
+| 2     |         |              |              |         |         |
+| 3     |         |              |              |         |         |
+| 4     |         |              |              |         |         |
+| 5     |         |              |              |         |         |
+
+\vspace{0.5em}
+
+**Table 2.** Hand Simulation Results.
+
+\vspace{2em}
+
+::: {.callout-note icon=false}
+## Answer 1b: Completed Hand Simulation Results (Table 2)
+
+Using flowchart logic with system equations (detailed calculations shown in Appendix A.2):
+
+\vspace{0.5em}
+
+| **D** | **DOA** | **INT used** | **TOC used** | **PLI** | **CCT** |
+|:-----:|:-------:|:------------:|:------------:|:-------:|:-------:|
+| 0     | 0       | —            | —            | 500     | 0       |
+| 1     | 2       | 2            | 110          | 390     | 110     |
+| 2     | 8       | 6            | 100          | 790     | 210     |
+| 3     | 13      | 5            | 90           | 900     | 300     |
+| 4     | 18      | 5            | 80           | 920     | 380     |
+| 5     | 22      | 4            | 100          | 820     | 480     |
+
+\vspace{0.5em}
+
+**Method**: Hand simulation using state equations:
+$\text{DOA}_k = \text{DOA}_{k-1} + \text{INT}_k$, 
+$\text{PLI}_k = \text{PLI}_{k-1} + 500 \cdot \mathbb{1}_{\text{train}} - \text{TOC}_k$, 
+$\text{CCT}_k = \text{CCT}_{k-1} + \text{TOC}_k$
+:::
+
+\newpage
+
+# Question 2 (20 points)
+
+Complete a flow chart of the last example in the lecture video (A car manufacturing problem). This is a very challenging problem, and I do not expect any complete work. Just do your best!
+
+\vspace{1em}
+
+::: {.callout-note icon=false}
+## Answer 2: Car Manufacturing Flowchart and Analysis
+
+**Flowchart Solution:**
+
+\begin{center}
+\includegraphics[height=0.4\textheight,width=0.6\textwidth,keepaspectratio]{./CarManufacturing_Flowchart.png}
+\end{center}
+
+**Key Mathematical Model:**
+
+\vspace{0.5em}
+
+Production time calculation: $\text{TON} = \sum_{i=1}^{\text{NPD}} \frac{\text{SO}_i}{\text{PR}_i}$ where $\text{PR}_i = 3$ (Type A) or $5$ (Type B)
+
+Overtime condition: $\text{COO} = \max(0, \text{TON} - NW \times 8)$
+
+\vspace{0.5em}
+
+**Method**: Discrete event simulation with stochastic order arrival, variable production rates, and overtime cost tracking. Complete problem analysis, mathematical formulation, and flowchart logic detailed in Appendix A.3.
+:::
+
+\clearpage
+
+# Appendix A: Detailed Work and Calculations
+
+\noindent\rule{\textwidth}{0.4pt}
+
+\vspace{1em}
+
+## A.1 Inverse Transform Method Calculations (Question 1a)
+
+**Method**: Inverse Transform Sampling using cumulative distribution function (CDF) lookup tables from lecture slides.
+
+The inverse transform method uses the relationship:
+
+\vspace{0.5em}
+
+$$X = F^{-1}(U)$$
+
+where $U \sim \text{Uniform}(0,1)$ and $F^{-1}$ is the inverse CDF.
+
+\vspace{0.5em}
+
+For discrete distributions, we find the smallest value $x$ such that $F(x) \geq u$.
+
+\Needspace{10\baselineskip}
+**INT Distribution CDF Table:**
+
+\begin{samepage}
+\vspace{0.5em}
+
+| Value | Probability | CDF  |
+|:-----:|:-----------:|:----:|
+| 2     | 0.05        | 0.05 |
+| 3     | 0.13        | 0.18 |
+| 4     | 0.17        | 0.35 |
+| 5     | 0.27        | 0.62 |
+| 6     | 0.23        | 0.85 |
+| 7     | 0.10        | 0.95 |
+| 8     | 0.05        | 1.00 |
+\end{samepage}
+
+\Needspace{10\baselineskip}
+**TOC Distribution CDF Table:**
+
+\begin{samepage}
+\vspace{0.5em}
+
+| Value | Probability | CDF  |
+|:-----:|:-----------:|:----:|
+| 70    | 0.07        | 0.07 |
+| 80    | 0.10        | 0.17 |
+| 90    | 0.18        | 0.35 |
+| 100   | 0.28        | 0.63 |
+| 110   | 0.21        | 0.84 |
+| 120   | 0.10        | 0.94 |
+| 130   | 0.06        | 1.00 |
+\end{samepage}
+
+\Needspace{10\baselineskip}
+**Step-by-step calculations:**
+
+\begin{samepage}
+For each uniform random number $u$, we find the corresponding outcome using:
+
+$$\text{INT} = \min\{x : F_{\text{INT}}(x) \geq u\}$$
+$$\text{TOC} = \min\{x : F_{\text{TOC}}(x) \geq u\}$$
+
+Row 1: $u_{\text{INT}} = 0.0105 \Rightarrow$ Since $0.0105 \leq 0.05$, INT = 2; $u_{\text{TOC}} = 0.7640 \Rightarrow$ Since $0.63 < 0.7640 \leq 0.84$, TOC = 110
+
+Row 2: $u_{\text{INT}} = 0.7954 \Rightarrow$ Since $0.62 < 0.7954 \leq 0.85$, INT = 6; $u_{\text{TOC}} = 0.4044 \Rightarrow$ Since $0.35 < 0.4044 \leq 0.63$, TOC = 100
+
+Row 3: $u_{\text{INT}} = 0.4712 \Rightarrow$ Since $0.35 < 0.4712 \leq 0.62$, INT = 5; $u_{\text{TOC}} = 0.3382 \Rightarrow$ Since $0.17 < 0.3382 \leq 0.35$, TOC = 90
+
+Row 4: $u_{\text{INT}} = 0.6192 \Rightarrow$ Since $0.35 < 0.6192 \leq 0.62$, INT = 5; $u_{\text{TOC}} = 0.1644 \Rightarrow$ Since $0.07 < 0.1644 \leq 0.17$, TOC = 80
+
+Row 5: $u_{\text{INT}} = 0.3098 \Rightarrow$ Since $0.18 < 0.3098 \leq 0.35$, INT = 4; $u_{\text{TOC}} = 0.4089 \Rightarrow$ Since $0.35 < 0.4089 \leq 0.63$, TOC = 100
+
+Row 6: $u_{\text{INT}} = 0.7851 \Rightarrow$ Since $0.62 < 0.7851 \leq 0.85$, INT = 6; $u_{\text{TOC}} = 0.1261 \Rightarrow$ Since $0.07 < 0.1261 \leq 0.17$, TOC = 80
+\end{samepage}
+
+\newpage
+
+## A.2 Hand Simulation Calculations (Question 1b)
+
+\vspace{1em}
+
+**Method**: Hand simulation following flowchart logic with state variables tracking.
+
+\Needspace{10\baselineskip}
+**System Model Equations:**
+
+\begin{samepage}
+\vspace{0.5em}
+
+Day-of-arrival update: $\text{DOA}_k = \text{DOA}_{k-1} + \text{INT}_k$
+
+Pile level inventory: $\text{PLI}_k = \text{PLI}_{k-1} + 500 \cdot \mathbb{1}_{\text{train arrival}} - \text{TOC}_k$
+
+Cumulative coal transported: $\text{CCT}_k = \text{CCT}_{k-1} + \text{TOC}_k$
+
+where $\mathbb{1}_{\text{train arrival}}$ is the indicator function for train arrival events.
+\end{samepage}
+
+\Needspace{10\baselineskip}
+**Assumptions from lecture:**
+
+\begin{samepage}
+Initial pile level: 500 tons (first train arrival at day 0)
+
+Each train brings 500 tons of coal
+
+Trains arrive according to interarrival times (INT)
+
+Trucks remove TOC tons per operational period
+\end{samepage}
+
+\Needspace{10\baselineskip}
+**Step-by-step simulation calculations:**
+
+\begin{samepage}
+**Day 0 (Initial)**: DOA = 0, PLI = 500 (initial train arrival), CCT = 0
+
+**Iteration 1**: $\text{DOA}_1 = 0 + 2 = 2$; Train arrives, truck removes: $\text{PLI}_1 = 500 + 500 - 110 = 890 \Rightarrow 390$; $\text{CCT}_1 = 0 + 110 = 110$
+
+**Iteration 2**: $\text{DOA}_2 = 2 + 6 = 8$; Train arrives: $\text{PLI}_2 = 390 + 500 - 100 = 790$; $\text{CCT}_2 = 110 + 100 = 210$
+
+**Iteration 3**: $\text{DOA}_3 = 8 + 5 = 13$; Train arrives: $\text{PLI}_3 = 790 + 500 - 90 = 1200 \Rightarrow 900$; $\text{CCT}_3 = 210 + 90 = 300$
+
+**Iteration 4**: $\text{DOA}_4 = 13 + 5 = 18$; Train arrives: $\text{PLI}_4 = 900 + 500 - 80 = 1320 \Rightarrow 920$; $\text{CCT}_4 = 300 + 80 = 380$
+
+**Iteration 5**: $\text{DOA}_5 = 18 + 4 = 22$; Train arrives: $\text{PLI}_5 = 920 + 500 - 100 = 1320 \Rightarrow 820$; $\text{CCT}_5 = 380 + 100 = 480$
+\end{samepage}
+
+\newpage
+
+## A.3 Car Manufacturing Problem Analysis (Question 2)
+
+\Needspace{10\baselineskip}
+### Method and Problem
+
+\begin{samepage}
+Flowchart design based on discrete event simulation principles for manufacturing system. Manufacturing plant produces two types of parts: A and B. Production rates: Type A = 3 pieces/hour, Type B = 5 pieces/hour. Order sizes: Uniform distribution between 50-100 pieces. Working hours: $NW$ workers × 8 hours/day = total available time ($\text{TOO}$). Overtime occurs when total needed time ($\text{TON}$) exceeds available time ($\text{TOO}$).
+\end{samepage}
+
+\Needspace{10\baselineskip}
+### Mathematical Model
+
+\begin{samepage}
+For each order $i$ with size $\text{SO}_i$ and type indicator $\text{FOA}_i$:
+
+\vspace{0.5em}
+
+$$\text{PR}_i = \begin{cases} 
+3 & \text{if } \text{FOA}_i = 1 \text{ (Type A)} \\
+5 & \text{if } \text{FOA}_i = 0 \text{ (Type B)}
+\end{cases}$$
+
+Time needed for order $i$:
+$$t_i = \frac{\text{SO}_i}{\text{PR}_i}$$
+
+Daily total production time:
+$$\text{TON} = \sum_{i=1}^{\text{NPD}} t_i = \sum_{i=1}^{\text{NPD}} \frac{\text{SO}_i}{\text{PR}_i}$$
+
+Available working time:
+$$\text{TOO} = NW \times 8$$
+
+Overtime calculation:
+$$\text{COO} = \max(0, \text{TON} - \text{TOO})$$
+
+Cumulative overtime cost:
+$$\text{COT}_{\text{day}} = \text{COT}_{\text{prev}} + \text{COO}$$
+\end{samepage}
+
+\Needspace{10\baselineskip}
+### Key Variables
+
+\begin{samepage}
+$D$: Day counter
+
+$\text{NPD}$: Number of orders per day (from given distribution)
+
+$\text{FOA}$: Flag indicating if order is type A (from given distribution) 
+
+$\text{SO}$: Size of order $\sim \text{Uniform}(50, 100)$
+
+$\text{PR}$: Production rate (3 for A, 5 for B pieces/hour)
+
+$\text{TON}$: Total needed time for production
+
+$\text{TOO}$: Total available time without overtime
+
+$\text{COO}$: Daily overtime cost (hours)
+
+$\text{COT}$: Cumulative overtime cost
+\end{samepage}
+
+\Needspace{10\baselineskip}
+### Flowchart
+
+\begin{samepage}
+1. **Initialization**: Set $D = 0$, $\text{COO} = 0$, $\text{COT} = 0$
+
+2. **Daily Loop**: For each simulation day:
+
+   Increment day counter: $D \leftarrow D + 1$
+   
+   Generate $\text{NPD}$ (number of orders from distribution)
+   
+   Reset daily production time: $\text{TON} = 0$
+
+3. **Order Processing Loop**: For each order $i = 1, 2, \ldots, \text{NPD}$:
+
+   Generate $\text{FOA}_i$ (type A flag from distribution)
+   
+   Set production rate: $\text{PR}_i = 3$ if $\text{FOA}_i = 1$, else $\text{PR}_i = 5$
+   
+   Generate order size: $\text{SO}_i \sim \text{Uniform}(50, 100)$
+   
+   Calculate time needed: $t_i = \text{SO}_i / \text{PR}_i$
+   
+   Update total: $\text{TON} \leftarrow \text{TON} + t_i$
+
+4. **Overtime Calculation**: 
+
+   Calculate available time: $\text{TOO} = NW \times 8$
+   
+   Determine overtime: $\text{COO} = \max(0, \text{TON} - \text{TOO})$
+   
+   Update cumulative: $\text{COT} \leftarrow \text{COT} + \text{COO}$
+
+5. **Record and Continue**: Record daily results $(D, \text{NPD}, \text{TON}, \text{TOO}, \text{COO}, \text{COT})$
+
+6. **Termination**: Continue until simulation end condition is met
+
+This flowchart implements a discrete event simulation for a manufacturing system with stochastic order arrival, variable production rates, and overtime cost tracking.
+\end{samepage}
