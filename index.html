@@ -27,15 +27,13 @@
             background: linear-gradient(135deg, var(--cinnamoroll-cream) 0%, var(--cinnamoroll-lavender) 100%);
             color: var(--cinnamoroll-dark-blue);
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             padding: 2em;
         }
 
         .container {
-            max-width: 800px;
+            max-width: 1200px;
             width: 100%;
+            margin: 0 auto;
             background: white;
             border-radius: 20px;
             box-shadow: 0 12px 32px rgba(0,0,0,0.15);
@@ -126,6 +124,22 @@
             margin-left: 0.5em;
             font-weight: 600;
         }
+
+        .presentation-container {
+            margin-top: 2em;
+            border: 2px solid var(--cinnamoroll-light-blue);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .presentation-iframe {
+            width: 100%;
+            height: 80vh;
+            min-height: 600px;
+            border: none;
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -142,10 +156,11 @@
                 (turns, stops, reversals) as functions of LED stimulus intensity, temporal history, 
                 and contextual features.
             </p>
-            <a href="Simulation_Presentation.html" class="project-link">
-                View Presentation →
-            </a>
             <span class="badge">Term Project</span>
+        </div>
+
+        <div class="presentation-container">
+            <iframe src="Simulation_Presentation.html" class="presentation-iframe" title="Simulation Presentation"></iframe>
         </div>
 
         <div class="footer">
