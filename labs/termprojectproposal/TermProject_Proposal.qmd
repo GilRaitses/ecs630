@@ -361,10 +361,7 @@ Supporting files include four categories. Model code consists of Python scripts 
 
 ## Format Requirements
 
-- **Quarto Report**: `TermProject_Report.qmd` rendering to PDF
-- **Style**: Match Lab01/Lab02 formatting (Avenir Next, Didot headings, technical terminology)
-- **Figures**: Kernel plots, PSTHs, KPI comparisons, interaction plots
-- **Tables**: DOE table, AcrossReplicationsSummary, model coefficients
+Format requirements include four elements. The Quarto report uses `TermProject_Report.qmd` rendering to PDF. Style matches Lab01 and Lab02 formatting with Avenir Next body text, Didot headings, and technical terminology. Figures include kernel plots, PSTHs, KPI comparisons, and interaction plots. Tables include the DOE table, AcrossReplicationsSummary, and model coefficients.
 
 # Timeline and Milestones
 
