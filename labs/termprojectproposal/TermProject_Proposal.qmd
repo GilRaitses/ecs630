@@ -96,7 +96,7 @@ The project connects simulation modeling methods from \tech{ECS630} with biologi
 
 ## Research Question
 
-How can we model \tech{larval behavioral responses} to \tech{time-varying LED stimuli} using \tech{event-hazard methods} to predict \tech{turn initiation rates}, \tech{behavioral state transitions}, and \tech{trajectory-level statistics}?
+How can \tech{larval behavioral responses} to \tech{time-varying LED stimuli} be modeled using \tech{event-hazard methods} to predict \tech{turn initiation rates}, \tech{behavioral state transitions}, and \tech{trajectory-level statistics}?
 
 ## Dataset Characteristics
 
@@ -182,11 +182,11 @@ where $v(t)$ is current speed and $\theta(t)$ is current heading.
 
 ### Factors and Levels
 
-| Factor | Low | Medium | High | Units |
-|--------|-----|--------|------|-------|
-| Stimulus Intensity | 0-25\% | 50-75\% | 100\% | LED power |
-| Pulse Duration | 0.5 s | 1.0 s | 2.0 s | Seconds |
-| Inter-Pulse Interval | 5 s | 10 s | 20 s | Seconds |
+| Factor | Levels | Description | Units |
+|--------|--------|-------------|-------|
+| Stimulus Intensity | 3 (PWM 250, 500, 1000) | Threshold, moderate, and high stimulus levels | PWM percentage |
+| Pulse Duration | 5 (10s, 15s, 20s, 25s, 30s) | Short to extended stimulus presentations | Seconds |
+| Inter-Pulse Interval | 3 (5s, 10s, 20s) | Rapid, moderate, and spaced stimulus timing | Seconds |
 
 ### Response Variables (KPIs)
 
@@ -200,7 +200,7 @@ where $v(t)$ is current speed and $\theta(t)$ is current heading.
 
 ### Experimental Design
 
-**Full factorial design**: $3^3 = 27$ conditions. For each condition:
+**Full factorial design**: $3 \times 5 \times 3 = 45$ conditions. For each condition:
 - Run \num{30} simulation replications (each representing one larva)
 - Record events and compute KPIs per replication
 - Generate \tech{AcrossReplicationsSummary.csv} with means and confidence intervals
@@ -334,7 +334,7 @@ class LarvalTrajectorySimulator:
 
 ### DOE Execution
 
-For each of 27 conditions:
+For each of 45 conditions:
 
 ```python
 results = []
@@ -474,7 +474,7 @@ For each KPI and condition:
 **Risk 7**: Model fitting may take longer than expected.
 - **Mitigation**: Start with simplified model (fewer features); use existing GLM libraries; parallelize over larvae if needed.
 
-**Risk 8**: Simulation may be computationally expensive for 810 total runs (27 × 30).
+**Risk 8**: Simulation may be computationally expensive for 1,350 total runs (45 × 30).
 - **Mitigation**: Optimize simulation code; run overnight batches; use cloud computing if needed; reduce replications if CI targets still met.
 
 # Success Criteria
