@@ -88,9 +88,9 @@ showtext_auto()
 
 # Introduction
 
-This term project proposes to develop a \tech{stimulus-response modeling framework} for \tech{Drosophila larval behavior} using \tech{event-hazard methods} from \tech{survival analysis} and \tech{generalized linear models}. The project leverages existing trajectory data from mechanosensation experiments to estimate time-varying hazard rates for behavioral events (turns, stops, reversals) conditioned on \tech{LED stimulus intensity}, \tech{temporal history}, and \tech{contextual features}. The model will be used to simulate trajectories under different \tech{experimental conditions} specified through a \tech{design of experiments} framework, enabling prediction of behavioral metrics and validation against empirical observations.
+This term project develops a \tech{stimulus-response modeling framework} for \tech{Drosophila larval behavior} using \tech{event-hazard methods} from \tech{survival analysis} and \tech{generalized linear models}. The project uses existing trajectory data from mechanosensation experiments to estimate time-varying hazard rates for behavioral events including turns, stops, and reversals conditioned on \tech{LED stimulus intensity}, \tech{temporal history}, and \tech{contextual features}. The model simulates trajectories under different \tech{experimental conditions} specified through a \tech{design of experiments} framework, which produces behavioral metrics comparable to empirical observations.
 
-The project connects simulation modeling methods from \tech{ECS630} with biological data analysis, demonstrating how \tech{discrete-event simulation principles} apply to \tech{behavioral systems} where events (behavioral transitions) occur stochastically as functions of external stimuli and internal state. Results will be reported using \tech{Arena-style summary statistics} including \tech{across-replications summaries}, \tech{confidence intervals}, and \tech{performance metrics} analogous to manufacturing system analysis.
+The project connects simulation modeling methods from \tech{ECS630} with biological data analysis. \tech{Discrete-event simulation principles} apply to \tech{behavioral systems} where events occur stochastically as functions of external stimuli and internal state. Results use \tech{Arena-style summary statistics} including \tech{across-replications summaries}, \tech{confidence intervals}, and \tech{performance metrics} analogous to manufacturing system analysis.
 
 # Problem Statement
 
@@ -114,7 +114,7 @@ Behavioral events occur stochastically with rates that depend on:
 2. **Contextual features**: Current speed, orientation relative to stimulus source, distance to arena walls
 3. **Individual heterogeneity**: Larva-to-larva variation in baseline activity and sensitivity
 
-Traditional approaches use simple rate averages or linear regressions. This project develops a \tech{structured hazard model} that captures temporal dependencies and enables trajectory simulation.
+Traditional approaches use simple rate averages or linear regressions. This project develops a \tech{structured hazard model} that captures temporal dependencies and supports trajectory simulation.
 
 # Proposed Methodology
 
@@ -157,19 +157,11 @@ $$\hat{\mathbf{\beta}} = \arg\max \left\{ \ell(\mathbf{\beta}) - \lambda_{\text{
 
 ### Model Validation
 
-- **Time-rescaled KS test**: Transform observed event times $t_k \to \int_0^{t_k} \lambda_E(t) dt$; under correct model, these should be Poisson process increments.
-- **Predictive log-likelihood**: Holdout larvae for each experimental condition.
-- **Peri-stimulus time histograms (PSTHs)**: Compare model-predicted vs. observed event rates around stimulus onsets.
+Model validation uses three methods. The time-rescaled KS test transforms observed event times $t_k \to \int_0^{t_k} \lambda_E(t) dt$, which under the correct model should form Poisson process increments. Predictive log-likelihood evaluates holdout larvae for each experimental condition. Peri-stimulus time histograms compare model-predicted versus observed event rates around stimulus onsets.
 
 ## Trajectory Simulation
 
-Given fitted hazard model, simulate trajectories:
-
-1. **Initialize**: Starting position, orientation, speed from empirical distributions
-2. **Event generation**: Sample next event time $t^*$ from $\lambda_E(t)$ using thinning algorithm
-3. **Event execution**: If turn, sample new orientation; if stop, pause; if reverse, flip direction
-4. **State update**: Update position via forward Euler integration with current speed/orientation
-5. **Repeat**: Until maximum simulation time reached
+Given a fitted hazard model, the simulation follows five steps. Initialization samples starting position, orientation, and speed from empirical distributions. Event generation samples the next event time $t^*$ from $\lambda_E(t)$ using a thinning algorithm. Event execution handles turns by sampling new orientation, stops by pausing, and reversals by flipping direction. State update integrates position using forward Euler integration with current speed and orientation. The process repeats until reaching maximum simulation time.
 
 ### Speed Dynamics
 
@@ -215,13 +207,7 @@ The replication length follows Lab04 CI methodology. Target precision uses \num{
 
 ### Input Data Sources
 
-1. **H5 Files**: Exported MAGAT experiment data in HDF5 format (e.g., `GMR61_202509051201_tier1.h5`)
-   - Contains trajectory positions, LED stimulus data, and metadata
-   - Located in `/Users/gilraitses/mechanosensation/h5tests/`
-   - Processed using `scripts/engineer_dataset_from_h5.py`
-2. **Trajectory CSVs**: `output/spatial_analysis/runs.csv`, `reorientations.csv` (if needed as backup)
-3. **Stimulus CSVs**: `led_stimulus_data_*.csv` with frame-level LED values (if needed as backup)
-4. **Experimental Metadata**: Experiment IDs, conditions, replication numbers
+The primary data source uses H5 files containing exported MAGAT experiment data in HDF5 format such as `GMR61_202509051201_tier1.h5`. These files contain trajectory positions, LED stimulus data, and metadata located in `/Users/gilraitses/mechanosensation/h5tests/` and processed using `scripts/engineer_dataset_from_h5.py`. Backup sources include trajectory CSVs at `output/spatial_analysis/runs.csv` and `reorientations.csv`, stimulus CSVs with frame-level LED values in `led_stimulus_data_*.csv`, and experimental metadata with experiment IDs, conditions, and replication numbers.
 
 ### Feature Extraction
 
@@ -268,11 +254,7 @@ for each track in h5_file['tracks']:
 
 ### Model Fitting Pipeline
 
-1. **Event detection**: Identify turn starts, stop starts, reversal starts from trajectory data
-2. **Feature matrix construction**: Create $N \times P$ matrix where $N$ = total time bins across all larvae, $P$ = number of features
-3. **GLM fitting**: Use `sklearn.linear_model.LogisticRegression` or `statsmodels` for Poisson GLM
-4. **Cross-validation**: Leave-one-larva-out CV to assess generalization
-5. **Kernel visualization**: Plot fitted kernel $\hat{\kappa}(\tau)$ to interpret temporal response
+The model fitting pipeline consists of five steps. Event detection identifies turn starts, stop starts, and reversal starts from trajectory data. Feature matrix construction creates an $N \times P$ matrix where $N$ equals total time bins across all larvae and $P$ equals the number of features. GLM fitting uses `sklearn.linear_model.LogisticRegression` or `statsmodels` for Poisson GLM. Cross-validation applies leave-one-larva-out CV to assess generalization. Kernel visualization plots the fitted kernel $\hat{\kappa}(\tau)$ to interpret temporal response.
 
 ## Simulation and DOE Execution
 
@@ -361,37 +343,21 @@ export_to_arena_format(results, 'AcrossReplicationsSummary.csv')
 
 ### Performance Metrics Calculation
 
-For each KPI and condition:
-
-- **Mean**: $\bar{X} = \frac{1}{n}\sum_{i=1}^n X_i$
-- **Standard Deviation**: $s = \sqrt{\frac{1}{n-1}\sum_{i=1}^n (X_i - \bar{X})^2}$
-- **95\% Confidence Interval**: $\bar{X} \pm t_{0.025,n-1} \frac{s}{\sqrt{n}}$
-- **Minimum/Maximum**: $\min_i X_i$, $\max_i X_i$
+For each KPI and condition, the analysis calculates four statistics. The mean uses $\bar{X} = \frac{1}{n}\sum_{i=1}^n X_i$. Standard deviation follows $s = \sqrt{\frac{1}{n-1}\sum_{i=1}^n (X_i - \bar{X})^2}$. The 95\% confidence interval uses $\bar{X} \pm t_{0.025,n-1} \frac{s}{\sqrt{n}}$. Minimum and maximum values track $\min_i X_i$ and $\max_i X_i$.
 
 ### Model Validation Metrics
 
-1. **Holdout log-likelihood**: Compare to null model (constant hazard)
-2. **KS test p-value**: Time-rescaled event times should be uniform
-3. **PSTH correlation**: Model-predicted vs. observed peri-stimulus histograms
-4. **Trajectory-level statistics**: Compare simulated vs. empirical distributions of KPIs
+Model validation uses four metrics. Holdout log-likelihood compares results to a null model with constant hazard. The KS test p-value evaluates whether time-rescaled event times follow a uniform distribution. PSTH correlation compares model-predicted versus observed peri-stimulus histograms. Trajectory-level statistics compare simulated versus empirical distributions of KPIs.
 
 # Expected Deliverables
 
 ## Report Components
 
-1. **Model Specification**: Mathematical formulation, kernel design, estimation procedure
-2. **Data Description**: Dataset characteristics, preprocessing steps, feature engineering
-3. **Model Fitting Results**: Fitted kernels, coefficients, validation metrics
-4. **DOE Results**: AcrossReplicationsSummary tables, main effects, interaction plots
-5. **Simulation Validation**: Comparison of simulated vs. empirical KPIs
-6. **Confidence Intervals**: CI construction methodology, run length justification
+The report includes six components. Model specification covers mathematical formulation, kernel design, and estimation procedure. Data description presents dataset characteristics, preprocessing steps, and feature engineering. Model fitting results show fitted kernels, coefficients, and validation metrics. DOE results include AcrossReplicationsSummary tables, main effects, and interaction plots. Simulation validation compares simulated versus empirical KPIs. Confidence intervals explain CI construction methodology and run length justification.
 
 ## Supporting Files
 
-1. **Model Code**: Python scripts for fitting (`fit_hazard_model.py`), simulation (`simulate_trajectories.py`), DOE execution (`run_doe.py`)
-2. **Data Exports**: Arena-style CSV files (`AcrossReplicationsSummary.csv`, `ContinuousTimeStatsByRep.csv`, `DiscreteTimeStatsByRep.csv`)
-3. **DOE Table**: `doe_table.csv` with 27 conditions and factor levels
-4. **Configuration**: `config.json` with model parameters, simulation settings, CI targets
+Supporting files include four categories. Model code consists of Python scripts for fitting (`fit_hazard_model.py`), simulation (`simulate_trajectories.py`), and DOE execution (`run_doe.py`). Data exports produce Arena-style CSV files including `AcrossReplicationsSummary.csv`, `ContinuousTimeStatsByRep.csv`, and `DiscreteTimeStatsByRep.csv`. The DOE table stores 45 conditions and factor levels in `doe_table.csv`. Configuration uses `config.json` for model parameters, simulation settings, and CI targets.
 
 ## Format Requirements
 
@@ -403,98 +369,70 @@ For each KPI and condition:
 # Timeline and Milestones
 
 ## Week 1: Data Preparation and Exploration
-- Load and inspect trajectory/stimulus data
-- Implement feature extraction pipeline
-- Compute empirical KPIs for baseline conditions
-- **Deliverable**: Data exploration notebook, baseline statistics
+
+Week 1 loads and inspects trajectory and stimulus data, implements the feature extraction pipeline, and computes empirical KPIs for baseline conditions. The deliverable includes a data exploration notebook and baseline statistics.
 
 ## Week 2: Model Development
-- Implement temporal kernel basis functions
-- Build GLM fitting pipeline
-- Fit baseline model (null: constant hazard)
-- Assess initial fit quality
-- **Deliverable**: Fitted null model, kernel visualization code
+
+Week 2 implements temporal kernel basis functions, builds the GLM fitting pipeline, fits a baseline model with constant hazard, and assesses initial fit quality. The deliverable includes the fitted null model and kernel visualization code.
 
 ## Week 3: Hazard Model Fitting
-- Fit stimulus-locked hazard models for turns/stops/reversals
-- Cross-validation and hyperparameter tuning
-- Model validation (KS tests, PSTH comparisons)
-- **Deliverable**: Fitted models, validation report
+
+Week 3 fits stimulus-locked hazard models for turns, stops, and reversals, performs cross-validation and hyperparameter tuning, and validates models using KS tests and PSTH comparisons. The deliverable includes fitted models and a validation report.
 
 ## Week 4: Simulation Engine Development
-- Implement trajectory simulator
-- Test on simple stimulus schedules
-- Validate simulated KPIs match empirical for known conditions
-- **Deliverable**: Working simulator, validation results
+
+Week 4 implements the trajectory simulator, tests on simple stimulus schedules, and validates that simulated KPIs match empirical values for known conditions. The deliverable includes a working simulator and validation results.
 
 ## Week 5: DOE Execution and Analysis
-- Run full factorial design (27 conditions × 30 replications)
-- Generate AcrossReplicationsSummary CSVs
-- Compute confidence intervals
-- Analyze main effects and interactions
-- **Deliverable**: Complete DOE results, summary tables
+
+Week 5 runs the full factorial design with 45 conditions and 30 replications per condition, generates AcrossReplicationsSummary CSVs, computes confidence intervals, and analyzes main effects and interactions. The deliverable includes complete DOE results and summary tables.
 
 ## Week 6: Report Writing and Finalization
-- Write Quarto report with all sections
-- Generate figures and tables
-- Final model validation against holdout data
-- **Deliverable**: Final report PDF, supporting code/data
+
+Week 6 writes the Quarto report with all sections, generates figures and tables, and performs final model validation against holdout data. The deliverable includes the final report PDF and supporting code and data.
 
 # Risk Assessment and Mitigation
 
 ## Technical Risks
 
-**Risk 1**: Temporal alignment between stimulus and behavior data may be inaccurate.
-- **Mitigation**: Use validated synchronization methods (MAGAT `addTonToff`); implement unit tests for alignment; visually inspect PSTHs for timing errors.
+Temporal alignment between stimulus and behavior data could be inaccurate. Mitigation uses validated synchronization methods through MAGAT `addTonToff`, implements unit tests for alignment, and visually inspects PSTHs for timing errors.
 
-**Risk 2**: Model may overfit to training data with complex kernel.
-- **Mitigation**: Use cross-validation; apply $L_2$ regularization; limit kernel complexity (fewer basis functions); compare AIC/BIC across models.
+The model could overfit to training data with a complex kernel. Mitigation uses cross-validation, applies $L_2$ regularization, limits kernel complexity by reducing basis functions, and compares AIC/BIC across models.
 
-**Risk 3**: Individual heterogeneity may violate exchangeability assumption.
-- **Mitigation**: Include larva-specific random effects if needed; stratify analysis by experimental batch; use hierarchical models if time permits.
+Individual heterogeneity could violate the exchangeability assumption. Mitigation includes larva-specific random effects when needed, stratifies analysis by experimental batch, and uses hierarchical models when time permits.
 
-**Risk 4**: Simulation may not capture spatial constraints (wall interactions).
-- **Mitigation**: Include wall distance in feature vector; implement boundary conditions in simulator; validate spatial distributions match empirical.
+Simulation might not capture spatial constraints such as wall interactions. Mitigation includes wall distance in the feature vector, implements boundary conditions in the simulator, and validates that spatial distributions match empirical data.
 
 ## Data Risks
 
-**Risk 5**: Insufficient data for some experimental conditions.
-- **Mitigation**: Pool similar conditions; use data augmentation (bootstrap resampling); report sample sizes per condition.
+Some experimental conditions might have insufficient data. Mitigation pools similar conditions, uses data augmentation through bootstrap resampling, and reports sample sizes per condition.
 
-**Risk 6**: Missing or corrupted trajectory segments.
-- **Mitigation**: Implement robust data validation; exclude problematic trajectories; report exclusion criteria in methods.
+Trajectory segments could be missing or corrupted. Mitigation implements robust data validation, excludes problematic trajectories, and reports exclusion criteria in methods.
 
 ## Timeline Risks
 
-**Risk 7**: Model fitting may take longer than expected.
-- **Mitigation**: Start with simplified model (fewer features); use existing GLM libraries; parallelize over larvae if needed.
+Model fitting could take longer than expected. Mitigation starts with a simplified model using fewer features, uses existing GLM libraries, and parallelizes over larvae when needed.
 
-**Risk 8**: Simulation may be computationally expensive for 1,350 total runs (45 × 30).
-- **Mitigation**: Optimize simulation code; run overnight batches; use cloud computing if needed; reduce replications if CI targets still met.
+Simulation could be computationally expensive for 1,350 total runs across 45 conditions with 30 replications each. Mitigation optimizes simulation code, runs overnight batches, uses cloud computing when needed, and reduces replications if CI targets are still met.
 
 # Success Criteria
 
 ## Model Performance Targets
 
-1. **Predictive Accuracy**: Holdout log-likelihood improvement ≥ \num{20}\% over null model
-2. **Temporal Fidelity**: KS test p-value > \num{0.05} (model not rejected)
-3. **Kernel Interpretability**: Fitted kernel shows biologically plausible latency (peak 0.5-2 s)
+Model performance targets include three criteria. Predictive accuracy requires holdout log-likelihood improvement of at least \num{20}\% over the null model. Temporal fidelity requires a KS test p-value greater than \num{0.05}, which indicates the model is not rejected. Kernel interpretability requires the fitted kernel to show biologically plausible latency with peak response between 0.5 and 2 seconds.
 
 ## Simulation Validation Targets
 
-1. **KPI Accuracy**: Simulated mean turn rates within \num{95}\% CI of empirical for baseline conditions
-2. **Distribution Match**: Simulated KPI distributions pass two-sample KS test vs. empirical (p > \num{0.05})
-3. **DOE Consistency**: Main effects show expected signs (higher intensity → higher turn rate)
+Simulation validation targets include three criteria. KPI accuracy requires simulated mean turn rates to fall within the \num{95}\% CI of empirical values for baseline conditions. Distribution match requires simulated KPI distributions to pass a two-sample KS test versus empirical distributions with p-value greater than \num{0.05}. DOE consistency requires main effects to show expected signs such as higher intensity producing higher turn rate.
 
 ## Deliverable Quality Targets
 
-1. **Report Completeness**: All sections present, figures/tables clear, methods reproducible
-2. **Code Quality**: Well-documented scripts, configuration files, unit tests where feasible
-3. **Data Format**: CSVs match Arena output format, readable by standard tools
+Deliverable quality targets include three criteria. Report completeness requires all sections present with clear figures and tables and reproducible methods. Code quality requires well-documented scripts, configuration files, and unit tests where feasible. Data format requires CSVs to match Arena output format and remain readable by standard tools.
 
 # Conclusion
 
-This project applies \tech{simulation modeling methods} from \tech{ECS630} to \tech{biological behavioral data}, developing a \tech{stimulus-response model} that can predict and simulate larval trajectories under different experimental conditions. The \tech{event-hazard framework} provides a principled approach to modeling stochastic behavioral events, while the \tech{DOE methodology} enables systematic exploration of stimulus parameter space. Results will be reported using \tech{Arena-style statistics} including \tech{confidence intervals} and \tech{across-replications summaries}, demonstrating how simulation principles extend beyond manufacturing systems to biological processes.
+This project applies \tech{simulation modeling methods} from \tech{ECS630} to \tech{biological behavioral data}, developing a \tech{stimulus-response model} that predicts and simulates larval trajectories under different experimental conditions. The \tech{event-hazard framework} models stochastic behavioral events, while the \tech{DOE methodology} explores stimulus parameter space systematically. Results use \tech{Arena-style statistics} including \tech{confidence intervals} and \tech{across-replications summaries}, which show how simulation principles extend from manufacturing systems to biological processes.
 
 # Appendix
 
@@ -505,7 +443,7 @@ This project applies \tech{simulation modeling methods} from \tech{ECS630} to \t
   - `GMR61_tier2_complete.h5` (83 MB): Full tier2 export with contours
   - `GMR61_202509051201_tier3.h5` (701 KB): Tier3 export with FID data
 - **Backup CSV Data**: `/Users/gilraitses/mechanosensation/output/spatial_analysis/`
-- **Stimulus Data**: `/Users/gilraitses/mechanosensation/led_stimulus_data_*.csv` (if needed)
+- **Stimulus Data**: `/Users/gilraitses/mechanosensation/led_stimulus_data_*.csv` when needed
 - **Experimental Metadata**: Experiment IDs embedded in H5 metadata or trajectory CSVs
 
 ## Model Implementation References
@@ -518,5 +456,5 @@ This project applies \tech{simulation modeling methods} from \tech{ECS630} to \t
 
 - **Python**: `scikit-learn`, `statsmodels`, `numpy`, `pandas` for modeling
 - **R**: `ggplot2`, `knitr`, `kableExtra` for report generation
-- **MATLAB**: MAGAT API for data loading (if needed)
+- **MATLAB**: MAGAT API for data loading when needed
 
