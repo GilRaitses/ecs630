@@ -207,12 +207,7 @@ where $v(t)$ is current speed and $\theta(t)$ is current heading.
 
 ### Run Length Determination
 
-Based on Lab04 CI methodology:
-
-- Target precision: \num{10}\% half-width for mean turn rate (e.g., if mean = \num{5} turns/min, want CI width < \num{0.5} turns/min)
-- Pilot study: Run \num{10} replications, estimate variance $\hat{\sigma}^2$
-- Required replications: $n \geq \left(\frac{z_{\alpha/2} \hat{\sigma}}{E}\right)^2$ where $E$ is desired half-width
-- If $n > 30$, increase to $n$; otherwise use \num{30} as minimum
+The replication length follows Lab04 CI methodology. Target precision uses \num{10}\% relative half-width for mean turn rate, which means when the mean equals \num{5} turns per minute the confidence interval width stays below \num{0.5} turns per minute. A pilot study runs \num{10} replications to estimate variance $\hat{\sigma}^2$. Required replications follow $n \geq \left(\frac{z_{\alpha/2} \hat{\sigma}}{E}\right)^2$ where $E$ represents the desired half-width. When $n > 30$ the simulation uses that calculated value, while values $n \leq 30$ default to \num{30} replications as the minimum standard.
 
 # Analysis Plan
 
