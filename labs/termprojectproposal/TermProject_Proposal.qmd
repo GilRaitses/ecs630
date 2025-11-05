@@ -365,29 +365,13 @@ Format requirements include four elements. The Quarto report uses `TermProject_R
 
 # Timeline and Milestones
 
-## Week 1: Data Preparation and Exploration
+## Week 1: November 6-13 (Data, Model Development, and Fitting)
 
-Week 1 loads and inspects trajectory and stimulus data, implements the feature extraction pipeline, and computes empirical KPIs for baseline conditions. The deliverable includes a data exploration notebook and baseline statistics.
+Week 1 covers data preparation, model development, and initial model fitting. The week loads and inspects trajectory and stimulus data, implements the feature extraction pipeline, and computes empirical KPIs for baseline conditions. It implements temporal kernel basis functions, builds the GLM fitting pipeline, and fits a baseline model with constant hazard. The week fits stimulus-locked hazard models for turns, stops, and reversals, performs cross-validation and hyperparameter tuning, and validates models using KS tests and PSTH comparisons. Deliverables include a data exploration notebook, baseline statistics, fitted models, and a validation report.
 
-## Week 2: Model Development
+## Week 2: November 13-20 (Simulation, DOE, and Report)
 
-Week 2 implements temporal kernel basis functions, builds the GLM fitting pipeline, fits a baseline model with constant hazard, and assesses initial fit quality. The deliverable includes the fitted null model and kernel visualization code.
-
-## Week 3: Hazard Model Fitting
-
-Week 3 fits stimulus-locked hazard models for turns, stops, and reversals, performs cross-validation and hyperparameter tuning, and validates models using KS tests and PSTH comparisons. The deliverable includes fitted models and a validation report.
-
-## Week 4: Simulation Engine Development
-
-Week 4 implements the trajectory simulator, tests on simple stimulus schedules, and validates that simulated KPIs match empirical values for known conditions. The deliverable includes a working simulator and validation results.
-
-## Week 5: DOE Execution and Analysis
-
-Week 5 runs the full factorial design with 45 conditions and 30 replications per condition, generates AcrossReplicationsSummary CSVs, computes confidence intervals, and analyzes main effects and interactions. The deliverable includes complete DOE results and summary tables.
-
-## Week 6: Report Writing and Finalization
-
-Week 6 writes the Quarto report with all sections, generates figures and tables, and performs final model validation against holdout data. The deliverable includes the final report PDF and supporting code and data.
+Week 2 covers simulation development, DOE execution, and report completion. The week implements the trajectory simulator, tests on simple stimulus schedules, and validates that simulated KPIs match empirical values for known conditions. It runs the full factorial design with 45 conditions and 30 replications per condition, generates AcrossReplicationsSummary CSVs, computes confidence intervals, and analyzes main effects and interactions. The week writes the Quarto report with all sections, generates figures and tables, and performs final model validation against holdout data. Deliverables include a working simulator, complete DOE results and summary tables, and the final report PDF with supporting code and data.
 
 # Risk Assessment and Mitigation
 
